@@ -65,6 +65,9 @@ New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\AppData\Local\nvim" -Tar
 
 ```bash
 cd ~/dotfiles
+
+git checkout .
+
 git pull
 ```
 
