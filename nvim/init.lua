@@ -9,6 +9,18 @@ vim.opt.undodir = vim.fn.stdpath("state") .. "/undo"
 vim.opt.undolevels = 10000
 vim.g.mapleader = " "
 
+
+vim.g.clipboard = {
+  name = 'OSC 52',
+  copy = {
+    ['+'] = require('vim.ui.clipboard.osc52').copy('+'),
+    ['+'] = require('vim.ui.clipboard.osc52').copy('*'),
+  },
+  paste = {
+    ['+'] = require('vim.ui.clipboard.osc52').paste('+'),
+    ['+'] = require('vim.ui.clipboard.osc52').paste('*'),
+  },
+}
 -- CSV/TSV filetype detection for rainbow_csv.nvim
 vim.filetype.add({
   extension = {
