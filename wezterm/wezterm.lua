@@ -4,7 +4,8 @@ local mux = wezterm.mux
 local act = wezterm.action
 
 -- IME オフ
-local zenhan = "C:\\Users\\224003037\\bin\\zenhan\\bin64\\zenhan.exe"
+local userprofile = os.getenv("USERPROFILE")
+local zenhan = userprofile .. "\\bin\\zenhan\\bin64\\zenhan.exe"
 local function ime_off()
   wezterm.background_child_process({ zenhan, "0" })
 end
