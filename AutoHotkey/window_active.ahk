@@ -10,9 +10,9 @@ screenH := A_ScreenHeight
 ; =========================
 ; ホットキー
 ; =========================
-#vkBA::ActivateZone("left")
-#[::ActivateZone("right_top")
-#]::ActivateZone("right_bottom")
+#^::ActivateZone("left")
+#\::ActivateZone("right_top")
+#[::ActivateZone("right_bottom")
 
 ; =========================
 ; ゾーン切替本体
