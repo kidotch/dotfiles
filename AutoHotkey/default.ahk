@@ -2,10 +2,11 @@
 
 #SingleInstance Force
 
-TraySetIcon("C:\Users\ahcha\AutoHotkey\AHK-ico.ico")
+userprofile := EnvGet("USERPROFILE")
+TraySetIcon(A_ScriptDir "\AHK-ico.ico")
 A_IconTip := "デフォルト"
 
-zenhanPath := "C:\Users\ahcha\bin\zenhan\bin64\zenhan.exe"
+zenhanPath := userprofile "\bin\zenhan\bin64\zenhan.exe"
 
 vkf0::Esc
 ~Esc::
