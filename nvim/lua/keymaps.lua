@@ -29,3 +29,161 @@ vim.keymap.set("i", "<Tab>", function()
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", false)
   end
 end, { desc = "Copilot: Accept suggestion or Tab" })
+
+-- CSV: cell/quote operations
+local function get_csv_cell_range()
+  local line = vim.api.nvim_get_current_line()
+  local col = vim.fn.col(".")
+  local cell_start = 1
+  local cell_end = #line
+  local in_quote = false
+
+  for i = 1, col do
+    local c = line:sub(i, i)
+    if c == '"' then in_quote = not in_quote end
+    if c == "," and not in_quote and i < col then
+      cell_start = i + 1
+    end
+  end
+
+  in_quote = false
+  for i = 1, #line do
+    local c = line:sub(i, i)
+    if c == '"' then in_quote = not in_quote end
+    if c == "," and not in_quote and i >= col then
+      cell_end = i - 1
+      break
+    end
+  end
+
+  return cell_start, cell_end
+end
+
+local function get_csv_quoted_range()
+  local line = vim.api.nvim_get_current_line()
+  local col = vim.fn.col(".")
+  local in_quote = false
+  local start = nil
+  local i = 1
+
+  while i <= #line do
+    local c = line:sub(i, i)
+    local nextc = line:sub(i + 1, i + 1)
+    if c == '"' then
+      if in_quote and nextc == '"' then
+        i = i + 2
+        goto continue
+      end
+      if not in_quote then
+        in_quote = true
+        start = i
+      else
+        local finish = i
+        if col >= start and col <= finish then
+          return start, finish
+        end
+        in_quote = false
+        start = nil
+      end
+    end
+    i = i + 1
+    ::continue::
+  end
+
+  return nil, nil
+end
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "csv",
+  callback = function()
+    -- セル削除 (dc)
+    vim.keymap.set("n", "dc", function()
+      local line = vim.api.nvim_get_current_line()
+      local cell_start, cell_end = get_csv_cell_range()
+      local before = line:sub(1, cell_start - 1)
+      local after = line:sub(cell_end + 1)
+      vim.api.nvim_set_current_line(before .. after)
+      vim.fn.cursor(0, math.max(1, cell_start))
+    end, { buffer = true, silent = true, desc = "Delete CSV cell" })
+
+    -- セル置換 (rc)
+    vim.keymap.set("n", "rc", function()
+      local line = vim.api.nvim_get_current_line()
+      local cell_start, cell_end = get_csv_cell_range()
+      local paste = vim.fn.getreg("+"):gsub("\n", "")
+      local before = line:sub(1, cell_start - 1)
+      local after = line:sub(cell_end + 1)
+      vim.api.nvim_set_current_line(before .. paste .. after)
+      vim.fn.cursor(0, cell_start)
+    end, { buffer = true, silent = true, desc = "Replace CSV cell" })
+
+    -- セルヤンク (yc)
+    vim.keymap.set("n", "yc", function()
+      local line = vim.api.nvim_get_current_line()
+      local cell_start, cell_end = get_csv_cell_range()
+      local content = line:sub(cell_start, cell_end)
+      vim.fn.setreg('"', content)
+      vim.notify("Yanked: " .. content)
+    end, { buffer = true, silent = true, desc = "Yank CSV cell" })
+
+    -- クォート範囲削除 (dq)
+    vim.keymap.set("n", "dq", function()
+      local line = vim.api.nvim_get_current_line()
+      local qs, qe = get_csv_quoted_range()
+      if not qs then
+        vim.notify("No quoted range under cursor", vim.log.levels.WARN)
+        return
+      end
+      local before = line:sub(1, qs - 1)
+      local after = line:sub(qe + 1)
+      vim.api.nvim_set_current_line(before .. after)
+      vim.fn.cursor(0, math.max(1, qs))
+    end, { buffer = true, silent = true, desc = "Delete quoted range" })
+
+    -- クォート範囲ヤンク (yq)
+    vim.keymap.set("n", "yq", function()
+      local line = vim.api.nvim_get_current_line()
+      local qs, qe = get_csv_quoted_range()
+      if not qs then
+        vim.notify("No quoted range under cursor", vim.log.levels.WARN)
+        return
+      end
+      local content = line:sub(qs + 1, qe - 1)
+      content = content:gsub('""', '"')
+      vim.fn.setreg('"', content)
+      vim.notify("Yanked: " .. content)
+    end, { buffer = true, silent = true, desc = "Yank quoted content" })
+
+    -- クォート範囲置換 (rq)
+    vim.keymap.set("n", "rq", function()
+      local line = vim.api.nvim_get_current_line()
+      local qs, qe = get_csv_quoted_range()
+      if not qs then
+        vim.notify("No quoted range under cursor", vim.log.levels.WARN)
+        return
+      end
+      local paste = vim.fn.getreg("+"):gsub("\n", "")
+      paste = paste:gsub('"', '""')
+      local before = line:sub(1, qs)
+      local after = line:sub(qe)
+      vim.api.nvim_set_current_line(before .. paste .. after)
+      vim.fn.cursor(0, qs + 1)
+    end, { buffer = true, silent = true, desc = "Replace quoted content" })
+
+    -- セルをクォート (sc)
+    vim.keymap.set("n", "sc", function()
+      local line = vim.api.nvim_get_current_line()
+      local cell_start, cell_end = get_csv_cell_range()
+      local content = line:sub(cell_start, cell_end)
+      if content:sub(1, 1) == '"' and content:sub(-1) == '"' then
+        vim.notify("Cell already quoted")
+        return
+      end
+      local escaped = content:gsub('"', '""')
+      local before = line:sub(1, cell_start - 1)
+      local after = line:sub(cell_end + 1)
+      vim.api.nvim_set_current_line(before .. '"' .. escaped .. '"' .. after)
+      vim.fn.cursor(0, cell_start + 1)
+    end, { buffer = true, silent = true, desc = "Quote CSV cell" })
+  end,
+})
