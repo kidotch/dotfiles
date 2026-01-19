@@ -81,5 +81,7 @@ F13::
 }
 */
 
+/*
 F10::Send("{Volume_Up}")
 F9::Send("{Volume_Down}")
+*/

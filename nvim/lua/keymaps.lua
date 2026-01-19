@@ -99,6 +99,64 @@ local function get_csv_quoted_range()
   return nil, nil
 end
 
+local function get_csv_cell_range_by_index(index)
+  local line = vim.api.nvim_get_current_line()
+  local in_quote = false
+  local cell_start = 1
+  local cell_index = 1
+
+  for i = 1, #line + 1 do
+    local c = line:sub(i, i)
+    if c == '"' then
+      in_quote = not in_quote
+    end
+    if (c == "," and not in_quote) or i == #line + 1 then
+      local cell_end = i - 1
+      if cell_index == index then
+        return cell_start, cell_end
+      end
+      cell_index = cell_index + 1
+      cell_start = i + 1
+    end
+  end
+
+  return nil, nil
+end
+
+local function get_csv_quoted_range_by_cell_index(index)
+  local line = vim.api.nvim_get_current_line()
+  local cell_start, cell_end = get_csv_cell_range_by_index(index)
+  if not cell_start then
+    return nil, nil
+  end
+
+  local in_quote = false
+  local start = nil
+  local i = cell_start
+
+  while i <= cell_end do
+    local c = line:sub(i, i)
+    local nextc = line:sub(i + 1, i + 1)
+    if c == '"' then
+      if in_quote and nextc == '"' then
+        i = i + 2
+        goto continue
+      end
+      if not in_quote then
+        in_quote = true
+        start = i
+      else
+        local finish = i
+        return start, finish
+      end
+    end
+    i = i + 1
+    ::continue::
+  end
+
+  return nil, nil
+end
+
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "csv",
   callback = function()
@@ -115,7 +173,17 @@ vim.api.nvim_create_autocmd("FileType", {
     -- セル置換 (rc)
     vim.keymap.set("n", "rc", function()
       local line = vim.api.nvim_get_current_line()
-      local cell_start, cell_end = get_csv_cell_range()
+      local count = vim.v.count
+      local cell_start, cell_end
+      if count > 0 then
+        cell_start, cell_end = get_csv_cell_range_by_index(count)
+      else
+        cell_start, cell_end = get_csv_cell_range()
+      end
+      if not cell_start then
+        vim.notify("CSV cell index out of range", vim.log.levels.WARN)
+        return
+      end
       local paste = vim.fn.getreg("+"):gsub("\n", "")
       local before = line:sub(1, cell_start - 1)
       local after = line:sub(cell_end + 1)
@@ -135,7 +203,13 @@ vim.api.nvim_create_autocmd("FileType", {
     -- クォート範囲削除 (dq)
     vim.keymap.set("n", "dq", function()
       local line = vim.api.nvim_get_current_line()
-      local qs, qe = get_csv_quoted_range()
+      local count = vim.v.count
+      local qs, qe
+      if count > 0 then
+        qs, qe = get_csv_quoted_range_by_cell_index(count)
+      else
+        qs, qe = get_csv_quoted_range()
+      end
       if not qs then
         vim.notify("No quoted range under cursor", vim.log.levels.WARN)
         return
@@ -149,7 +223,13 @@ vim.api.nvim_create_autocmd("FileType", {
     -- クォート範囲ヤンク (yq)
     vim.keymap.set("n", "yq", function()
       local line = vim.api.nvim_get_current_line()
-      local qs, qe = get_csv_quoted_range()
+      local count = vim.v.count
+      local qs, qe
+      if count > 0 then
+        qs, qe = get_csv_quoted_range_by_cell_index(count)
+      else
+        qs, qe = get_csv_quoted_range()
+      end
       if not qs then
         vim.notify("No quoted range under cursor", vim.log.levels.WARN)
         return
@@ -163,7 +243,13 @@ vim.api.nvim_create_autocmd("FileType", {
     -- クォート範囲置換 (rq)
     vim.keymap.set("n", "rq", function()
       local line = vim.api.nvim_get_current_line()
-      local qs, qe = get_csv_quoted_range()
+      local count = vim.v.count
+      local qs, qe
+      if count > 0 then
+        qs, qe = get_csv_quoted_range_by_cell_index(count)
+      else
+        qs, qe = get_csv_quoted_range()
+      end
       if not qs then
         vim.notify("No quoted range under cursor", vim.log.levels.WARN)
         return
