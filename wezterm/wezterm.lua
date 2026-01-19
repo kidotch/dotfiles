@@ -99,6 +99,39 @@ config.keys = {
       act.EmitEvent("ime-off"),
     }),
   },
+  -- ペイン切り替え（IME オフ付き）: Ctrl+Shift+矢印
+  {
+    key = "LeftArrow",
+    mods = "CTRL|SHIFT",
+    action = act.Multiple({
+      act.ActivatePaneDirection("Left"),
+      act.EmitEvent("ime-off"),
+    }),
+  },
+  {
+    key = "RightArrow",
+    mods = "CTRL|SHIFT",
+    action = act.Multiple({
+      act.ActivatePaneDirection("Right"),
+      act.EmitEvent("ime-off"),
+    }),
+  },
+  {
+    key = "UpArrow",
+    mods = "CTRL|SHIFT",
+    action = act.Multiple({
+      act.ActivatePaneDirection("Up"),
+      act.EmitEvent("ime-off"),
+    }),
+  },
+  {
+    key = "DownArrow",
+    mods = "CTRL|SHIFT",
+    action = act.Multiple({
+      act.ActivatePaneDirection("Down"),
+      act.EmitEvent("ime-off"),
+    }),
+  },
   {
     key = "0",
     mods = "CTRL",
@@ -163,7 +196,8 @@ config.inactive_pane_hsb = {
   saturation = 1.0,
   brightness = 0.4,
 }
-config.color_scheme = 'Kanagawa Dragon (Gogh)'
+config.color_scheme = 'Solarized Dark Higher Contrast'
+-- config.color_scheme = 'Kanagawa Dragon (Gogh)'
 -- config.color_scheme = 'AdventureTime'
 ----------------------------------------------------
 -- Tab

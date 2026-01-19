@@ -40,10 +40,6 @@ end
 vim.o.title = true
 vim.o.titlestring = "Neovim"
 
--- csv.vim 設定
-vim.g.csv_delim = ","
-vim.g.csv_no_conceal = 1
-
 -- lazy.nvim ブートストラップ
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
@@ -59,7 +55,37 @@ vim.opt.rtp:prepend(lazypath)
 require("lazy").setup("plugins")
 
 -- カラースキーム
-vim.cmd.colorscheme("kanagawa")
+local colorscheme_list = { "solarized-osaka", "neosolarized", "tokyonight", "kanagawa", "gruvbox" }
+local colorscheme_index = 1
+
+local function apply_colorscheme(name)
+  local ok, err = pcall(vim.cmd.colorscheme, name)
+  if ok then
+    return true
+  end
+  vim.notify("Colorscheme failed: " .. name .. " (" .. tostring(err) .. ")", vim.log.levels.WARN)
+  return false
+end
+
+local function cycle_colorscheme(step)
+  local count = #colorscheme_list
+  for _ = 1, count do
+    colorscheme_index = ((colorscheme_index - 1 + step) % count) + 1
+    if apply_colorscheme(colorscheme_list[colorscheme_index]) then
+      return
+    end
+  end
+end
+
+apply_colorscheme(colorscheme_list[colorscheme_index])
+
+function _G.cycle_colorscheme_next()
+  cycle_colorscheme(1)
+end
+
+function _G.cycle_colorscheme_prev()
+  cycle_colorscheme(-1)
+end
 
 -- 背景透過
 local transparent_enabled = true

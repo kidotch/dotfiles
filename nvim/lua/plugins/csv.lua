@@ -1,24 +1,20 @@
 return {
-  "chrisbra/csv.vim",
-  config = function()
-    local colors = {
-      "#E06C75", -- 赤
-      "#98C379", -- 緑
-      "#61AFEF", -- 青
-      "#E5C07B", -- 黄
-    }
-
-    local function apply_csv_colors()
-      vim.api.nvim_set_hl(0, "CSVColumnOdd", { fg = colors[1] })
-      vim.api.nvim_set_hl(0, "CSVColumnEven", { fg = colors[2] })
-      vim.api.nvim_set_hl(0, "CSVColumnHeaderOdd", { fg = colors[3], bold = true })
-      vim.api.nvim_set_hl(0, "CSVColumnHeaderEven", { fg = colors[4], bold = true })
-    end
-
-    apply_csv_colors()
-    vim.api.nvim_create_autocmd("ColorScheme", {
-      pattern = "*",
-      callback = apply_csv_colors,
-    })
-  end,
+  "hat0uma/csvview.nvim",
+  ft = { "csv", "tsv" },
+  cmd = { "CsvViewEnable", "CsvViewDisable", "CsvViewToggle" },
+  opts = {
+    parser = { comments = { "#", "//" } },
+    keymaps = {
+      textobject_field_inner = { "if", mode = { "o", "x" } },
+      textobject_field_outer = { "af", mode = { "o", "x" } },
+      jump_next_field_end = { "<Tab>", mode = { "n", "v" } },
+      jump_prev_field_end = { "<S-Tab>", mode = { "n", "v" } },
+      jump_next_row = { "<Enter>", mode = { "n", "v" } },
+      jump_prev_row = { "<S-Enter>", mode = { "n", "v" } },
+    },
+    view = {
+      display_mode = "border",
+      min_column_width = 5,
+    },
+  },
 }

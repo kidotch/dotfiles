@@ -3,6 +3,12 @@
 vim.keymap.set("n", "<leader>ub", function()
   _G.toggle_transparency()
 end, { silent = true, desc = "UI: Toggle background transparency" })
+vim.keymap.set("n", "<leader>un", function()
+  _G.cycle_colorscheme_next()
+end, { silent = true, desc = "UI: Next colorscheme" })
+vim.keymap.set("n", "<leader>up", function()
+  _G.cycle_colorscheme_prev()
+end, { silent = true, desc = "UI: Prev colorscheme" })
 
 -- F13 を Esc として使う
 vim.keymap.set({ "n", "i", "v", "s" }, "<F12>", "<Esc>", { silent = true })
@@ -122,7 +128,7 @@ vim.api.nvim_create_autocmd("FileType", {
       local line = vim.api.nvim_get_current_line()
       local cell_start, cell_end = get_csv_cell_range()
       local content = line:sub(cell_start, cell_end)
-      vim.fn.setreg('"', content)
+      vim.fn.setreg("+", content)
       vim.notify("Yanked: " .. content)
     end, { buffer = true, silent = true, desc = "Yank CSV cell" })
 
@@ -150,7 +156,7 @@ vim.api.nvim_create_autocmd("FileType", {
       end
       local content = line:sub(qs + 1, qe - 1)
       content = content:gsub('""', '"')
-      vim.fn.setreg('"', content)
+      vim.fn.setreg("+", content)
       vim.notify("Yanked: " .. content)
     end, { buffer = true, silent = true, desc = "Yank quoted content" })
 
