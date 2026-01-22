@@ -36,6 +36,20 @@ if vim.fn.has("win32") == 1 then
   })
 end
 
+-- フォーカス切り替え時に常にノーマルモードへ遷移
+vim.api.nvim_create_autocmd({ "FocusGained", "FocusLost" }, {
+  callback = function()
+    local mode = vim.fn.mode()
+    if mode ~= "n" then
+      vim.cmd("stopinsert")
+      -- ビジュアルモードやコマンドラインモードからも抜ける
+      if mode:match("[vVsS\x16]") or mode == "c" then
+        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+      end
+    end
+  end,
+})
+
 -- Terminal title for WezTerm tab name
 vim.o.title = true
 vim.o.titlestring = "Neovim"

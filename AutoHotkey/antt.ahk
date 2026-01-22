@@ -31,6 +31,15 @@ SC029::  ; 半角/全角キー
     c::Send "{Enter}"
 #HotIf  ; 条件設定の終了（ここから下は常に有効になる）
 
+F8::
+{
+    weztermWin := "ahk_class org.wezfurlong.wezterm"
+    hwnd := WinExist(weztermWin)
+    if !hwnd
+        return
+    ControlSend("{Esc}yyp", , "ahk_id " hwnd)
+}
+
 F9::
 {
 
@@ -192,13 +201,30 @@ F11::
 
     Send("{Esc}")
     Sleep(80)
-    Send("y")
+    Send("{Shift down}l{Shift up}")  ; Shiftのスタックを防止
+    KeyWait("Shift")  ; Shiftが完全に離されるまで待機
+    Sleep(50)
 
-    A_Clipboard := ""
-    while !ClipWait(1)
-    {
-        ; Wait until something is copied by the user.
-    }
+    ; アルファベット2文字 or アルファベット1文字+Enter を待機（入力はEdgeに送信される）
+    ih := InputHook("L2 V")  ; 最大2文字で終了、"V"で入力を可視（Edgeに送信）
+    ih.KeyOpt("{Enter}", "E")  ; Enterキーで終了
+    ih.KeyOpt("{Escape}", "E")  ; Escapeでキャンセル
+    ih.Start()
+    ih.Wait()
+
+    ; Escapeでキャンセルされた場合は終了
+    if (ih.EndKey = "Escape")
+        return
+
+    ; 入力が空または条件を満たさない場合は終了
+    if (ih.Input = "" || !RegExMatch(ih.Input, "^[a-zA-Z]{1,2}$"))
+        return
+
+    Sleep(300)
+    SendInput("ct")  ; Vimiumでクリップボードにコピー（素早く送信）
+    Sleep(300)
+    Send("{Esc}")
+    Sleep(80)
 
     hwnd := WinExist(weztermWin)
     if !hwnd

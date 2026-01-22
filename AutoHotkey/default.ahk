@@ -85,3 +85,12 @@ F13::
 F10::Send("{Volume_Up}")
 F9::Send("{Volume_Down}")
 */
+
+F8::
+{
+    prevHwnd := WinGetID("A")
+    WinActivate("ahk_exe msedge.exe")
+    WinWaitActive("ahk_exe msedge.exe", , 1)
+    Send("{Media_Play_Pause}")
+    WinActivate(prevHwnd)
+}
