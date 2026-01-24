@@ -2,16 +2,129 @@
 
 #SingleInstance Force
 
-userprofile := EnvGet("USERPROFILE")
 TraySetIcon(A_ScriptDir "\AHK-ico.ico")
 A_IconTip := "デフォルト"
 
+userprofile := EnvGet("USERPROFILE")
 zenhanPath := userprofile "\bin\zenhan\bin64\zenhan.exe"
 
-vkf0::Esc
+;capslockキー
+F13::sc029
+/*
+{
+    global imeGauge, imeProgress, imeLabel, gaugeFilled
+    gaugeFilled := false
+
+    ; ゲージGUI作成
+    imeGauge := Gui("+AlwaysOnTop -Caption +ToolWindow")
+    imeGauge.BackColor := "1a1a1a"
+    imeGauge.SetFont("s48 cWhite Bold", "Segoe UI")
+    imeLabel := imeGauge.AddText("w120 Center", "A")
+    imeGauge.SetFont("s10")
+    imeProgress := imeGauge.AddProgress("w120 h10 cBlue Background333333", 0)
+    imeGauge.Show("NoActivate")
+    WinSetTransparent(200, imeGauge)
+
+    ; ゲージアニメーション
+    startTime := A_TickCount
+    duration := 250  ; 0.3秒
+
+    while GetKeyState("F13", "P") {
+        elapsed := A_TickCount - startTime
+        percent := Min(100, (elapsed / duration) * 100)
+        imeProgress.Value := percent
+
+        if (percent >= 100 && !gaugeFilled) {
+            gaugeFilled := true
+            imeLabel.Text := "あ"
+            imeLabel.SetFont("c000000")
+            imeProgress.Opt("cGreen")
+            imeGauge.BackColor := "e0e0e0"
+        }
+        Sleep(10)
+    }
+
+    ; キーを離したら実行
+    if gaugeFilled {
+        Run(zenhanPath " 1", , "Hide")
+    } else {
+        Run(zenhanPath " 0", , "Hide")
+    }
+
+    imeGauge.Destroy()
+}
+*/
 ~Esc::
 {
     Run(zenhanPath " 0", , "Hide")
+}
+
+/*
+$;::
+{
+    if GetKeyState("Shift", "P")
+        Send "{Blind};"  ; Shift+; は元のまま
+    else
+        Send "-"
+}
+
+$-::
+{
+    if GetKeyState("Shift", "P")
+        Send "{Blind}-"  ; Shift+- は元のまま
+    else
+        Send ";"
+}
+*/
+/*
+~LAlt Up::
+{
+    if (A_PriorKey = "LAlt")
+        Send "{Escape}"
+}
+*/
+~LCtrl Up::
+{
+    if (A_PriorKey = "LControl")
+        Send "{Escape}"
+}
+
+Space & h::Left
+Space & j::Down
+Space & k::Up
+Space & l::Right
+
+; Space + asdfg zxcvb → 1234567890
+Space & a::1
+Space & s::2
+Space & d::3
+Space & f::4
+Space & g::5
+Space & z::6
+Space & x::7
+Space & c::8
+Space & v::9
+Space & b::0
+
+; Win+Alt+矢印でマウス操作
+#!Left::MouseMove(-20, 0, 0, "R")
+#!Right::MouseMove(20, 0, 0, "R")
+#!Up::MouseMove(0, -20, 0, "R")
+#!Down::MouseMove(0, 20, 0, "R")
+#!Enter::Click
+#!+Enter::Click "Right"
+
+; Space単押しでスペースを
+Space::Send "{Space}"
++Space::Send "{Backspace}"
+
+F8::
+{
+    prevHwnd := WinGetID("A")
+    WinActivate("ahk_exe msedge.exe")
+    WinWaitActive("ahk_exe msedge.exe", , 1)
+    Send("{Media_Play_Pause}")
+    WinActivate(prevHwnd)
 }
 
 /*
@@ -24,7 +137,7 @@ vkf0::Esc
 #HotIf !WinActive("ahk_exe msedge.exe")
 vkf0::F12
 #HotIf
-*/
+
 
 WheelRight::Send("{Volume_Up}")
 WheelLeft::Send("{Volume_Down}")
@@ -64,7 +177,6 @@ RButton & LButton::
     SetTimer () => ToolTip(), -800
 }
 
-/*
 F13::
 {
     if !KeyWait("F13", "T0.3")
@@ -79,18 +191,9 @@ F13::
         Send "^v"
     }
 }
-*/
 
-/*
 F10::Send("{Volume_Up}")
 F9::Send("{Volume_Down}")
+
 */
 
-F8::
-{
-    prevHwnd := WinGetID("A")
-    WinActivate("ahk_exe msedge.exe")
-    WinWaitActive("ahk_exe msedge.exe", , 1)
-    Send("{Media_Play_Pause}")
-    WinActivate(prevHwnd)
-}

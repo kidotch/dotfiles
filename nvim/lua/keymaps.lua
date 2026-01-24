@@ -10,9 +10,6 @@ vim.keymap.set("n", "<leader>up", function()
   _G.cycle_colorscheme_prev()
 end, { silent = true, desc = "UI: Prev colorscheme" })
 
--- F13 を Esc として使う
-vim.keymap.set({ "n", "i", "v", "s" }, "<F12>", "<Esc>", { silent = true })
-
 -- nvim-tree
 vim.keymap.set("n", "<leader>tt", "<cmd>NvimTreeToggle<CR>", { desc = "Tree: Toggle" })
 vim.keymap.set("n", "<leader>tF", "<cmd>NvimTreeFocus<CR>", { desc = "Tree: Focus" })

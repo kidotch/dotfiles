@@ -2,6 +2,7 @@
 
 global modeActive := false
 
+/*
 SC029::  ; 半角/全角キー
 {
     global modeActive
@@ -18,6 +19,7 @@ SC029::  ; 半角/全角キー
     ; 1.5秒後にツールチップ（メッセージ）を消す
     SetTimer () => ToolTip(), -1500
 }
+*/
 
 #HotIf modeActive  ; ここから下の設定は modeActive が真の時だけ有効
     q::4
@@ -231,3 +233,13 @@ F11::
         return
     ControlSend("{Esc}4rq", , "ahk_id " hwnd)
 }
+
+; MPC-BE へのキー転送設定
+#HotIf WinExist("ahk_exe mpc-be64.exe")
+    Left::ControlSend("{Left}", , "ahk_exe mpc-be64.exe")
+    Right::ControlSend("{Right}", , "ahk_exe mpc-be64.exe")
+    ^Left::ControlSend("^{Left}", , "ahk_exe mpc-be64.exe")
+    ^Right::ControlSend("^{Right}", , "ahk_exe mpc-be64.exe")
+    \::ControlSend("{Space}", , "ahk_exe mpc-be64.exe")
+    !x::ControlSend("!x", , "ahk_exe mpc-be64.exe")
+#HotIf

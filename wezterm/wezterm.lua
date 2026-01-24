@@ -36,7 +36,7 @@ end)
 ----------------------------------------------------
 config.automatically_reload_config = true
 config.enable_kitty_keyboard = false
-config.status_update_interval = 500
+config.status_update_interval = 1000
 config.term = "xterm-256color"
 config.default_prog = { "pwsh.exe" }
 
@@ -216,6 +216,7 @@ config.colors = {
   tab_bar = {
     inactive_tab_edge = "none",
   },
+  compose_cursor = "#e06c75",  -- IME変換中のカーソル色
 }
 
 wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
