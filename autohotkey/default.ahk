@@ -2,14 +2,27 @@
 
 #SingleInstance Force
 
-TraySetIcon(A_ScriptDir "\AHK-ico.ico")
+TraySetIcon(A_ScriptDir "\icon1.ico")
 A_IconTip := "デフォルト"
 
 userprofile := EnvGet("USERPROFILE")
 zenhanPath := userprofile "\bin\zenhan\bin64\zenhan.exe"
 
 ;capslockキー
-F13::sc029
+F13::
+{
+    ; 押下時に即座に切り替え
+    Send "{sc029}"
+
+    ; 長押し判定（0.3秒待つ）
+    if !KeyWait("F13", "T0.3")
+    {
+        ; 長押し：離すまで待って、また切り替え（元に戻る）
+        KeyWait "F13"
+        Send "{sc029}"
+    }
+    ; 短押し：何もしない（切り替えたまま）
+}
 /*
 {
     global imeGauge, imeProgress, imeLabel, gaugeFilled
@@ -89,6 +102,9 @@ $-::
         Send "{Escape}"
 }
 
++Space::Backspace
+
+/*
 Space & h::Left
 Space & j::Down
 Space & k::Up
@@ -105,18 +121,28 @@ Space & x::7
 Space & c::8
 Space & v::9
 Space & b::0
-
+*/
 ; Win+Alt+矢印でマウス操作
+/*
 #!Left::MouseMove(-20, 0, 0, "R")
 #!Right::MouseMove(20, 0, 0, "R")
 #!Up::MouseMove(0, -20, 0, "R")
 #!Down::MouseMove(0, 20, 0, "R")
 #!Enter::Click
 #!+Enter::Click "Right"
-
-; Space単押しでスペースを
-Space::Send "{Space}"
-+Space::Send "{Backspace}"
+*/
+; Space単押しでスペースを、Shift+SpaceでBackspace
+/*
+*Space Up::
+{
+    if (A_PriorKey = "Space") {
+        if GetKeyState("Shift", "P")
+            SendInput "{Backspace}"
+        else
+            SendInput "{Space}"
+    }
+}
+*/
 
 F8::
 {

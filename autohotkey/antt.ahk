@@ -1,5 +1,10 @@
 ﻿#Requires AutoHotkey v2.0
 
+#SingleInstance Force
+
+TraySetIcon(A_ScriptDir "\cat.ico")
+A_IconTip := "アノテーション用"
+
 global modeActive := false
 
 /*
@@ -234,12 +239,25 @@ F11::
     ControlSend("{Esc}4rq", , "ahk_id " hwnd)
 }
 
-; MPC-BE へのキー転送設定
-#HotIf WinExist("ahk_exe mpc-be64.exe")
-    Left::ControlSend("{Left}", , "ahk_exe mpc-be64.exe")
-    Right::ControlSend("{Right}", , "ahk_exe mpc-be64.exe")
-    ^Left::ControlSend("^{Left}", , "ahk_exe mpc-be64.exe")
-    ^Right::ControlSend("^{Right}", , "ahk_exe mpc-be64.exe")
-    \::ControlSend("{Space}", , "ahk_exe mpc-be64.exe")
-    !x::ControlSend("!x", , "ahk_exe mpc-be64.exe")
+; Edgeがアクティブな時のキー転送設定
+#HotIf WinActive("ahk_exe msedge.exe")
+    ; WezTermへ h,j,k,l を送信
+    ^h::ControlSend("h", , "ahk_class org.wezfurlong.wezterm")
+    ^j::ControlSend("j", , "ahk_class org.wezfurlong.wezterm")
+    ^k::ControlSend("k", , "ahk_class org.wezfurlong.wezterm")
+    ^l::ControlSend("l", , "ahk_class org.wezfurlong.wezterm")
+
+    ; MPC-BEへ左右キーを送信
+    ^y::ControlSend("{Left}", , "ahk_exe mpc-be64.exe")
+    ^o::ControlSend("{Right}", , "ahk_exe mpc-be64.exe")
+
+    ; MPC-BEへCtrl+左右キーを送信
+    ^u::ControlSend("^{Left}", , "ahk_exe mpc-be64.exe")
+    ^i::ControlSend("^{Right}", , "ahk_exe mpc-be64.exe")
+
+    ; MPC-BEへSpace（再生/一時停止）を送信
+    ^p::ControlSend("{Space}", , "ahk_exe mpc-be64.exe")
+
+    ; MPC-BEへAlt+xを送信
+    ^;::ControlSend("!x", , "ahk_exe mpc-be64.exe")
 #HotIf

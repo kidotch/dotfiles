@@ -207,7 +207,7 @@ config.show_tabs_in_tab_bar = true
 config.window_frame = {
   inactive_titlebar_bg = "none",
   active_titlebar_bg = "none",
-  font_size = 14,
+  font_size = 12,
 }
 -- window_background_gradient is managed dynamically in apply_transparency_mode()
 config.show_new_tab_button_in_tab_bar = false
