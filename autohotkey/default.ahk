@@ -9,6 +9,7 @@ userprofile := EnvGet("USERPROFILE")
 zenhanPath := userprofile "\bin\zenhan\bin64\zenhan.exe"
 
 ;capslockキー
+/*
 F13::
 {
     ; 押下時に即座に切り替え
@@ -23,7 +24,8 @@ F13::
     }
     ; 短押し：何もしない（切り替えたまま）
 }
-/*
+*/
+F13::
 {
     global imeGauge, imeProgress, imeLabel, gaugeFilled
     gaugeFilled := false
@@ -40,7 +42,7 @@ F13::
 
     ; ゲージアニメーション
     startTime := A_TickCount
-    duration := 250  ; 0.3秒
+    duration := 200  ; ここで長押しの秒数を決める
 
     while GetKeyState("F13", "P") {
         elapsed := A_TickCount - startTime
@@ -66,7 +68,6 @@ F13::
 
     imeGauge.Destroy()
 }
-*/
 ~Esc::
 {
     Run(zenhanPath " 0", , "Hide")

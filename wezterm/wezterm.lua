@@ -300,6 +300,7 @@ wezterm.on("update-right-status", function(window, pane)
   apply_transparency_mode(window)
 end)
 
+
 wezterm.on("toggle-transparency-mode", function(window, pane)
   wezterm.GLOBAL.transparency_mode = (wezterm.GLOBAL.transparency_mode + 1) % 3
   apply_transparency_mode(window)
