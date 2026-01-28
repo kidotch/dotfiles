@@ -43,7 +43,7 @@ config.default_prog = { "pwsh.exe" }
 ----------------------------------------------------
 -- Font / Input
 ----------------------------------------------------
-config.font_size = 12
+config.font_size = 14
 config.use_ime = true
 config.adjust_window_size_when_changing_font_size = false
 
