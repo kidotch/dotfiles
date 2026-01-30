@@ -1,3 +1,7 @@
+vim.notify(
+  "INIT.LUA LOADED: " .. vim.fn.expand("$MYVIMRC"),
+  vim.log.levels.INFO
+)
 -- 基本設定
 vim.opt.number = true
 vim.opt.relativenumber = true
