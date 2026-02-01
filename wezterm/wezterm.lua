@@ -132,6 +132,12 @@ config.keys = {
       act.EmitEvent("ime-off"),
     }),
   },
+  -- 貼り付け
+  {
+    key = "v",
+    mods = "CTRL",
+    action = act.PasteFrom("Clipboard"),
+  },
   {
     key = "0",
     mods = "CTRL",
