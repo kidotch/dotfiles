@@ -5,26 +5,9 @@
 TraySetIcon(A_ScriptDir "\icon1.ico")
 A_IconTip := "デフォルト"
 
-userprofile := EnvGet("USERPROFILE")
-zenhanPath := userprofile "\bin\zenhan\bin64\zenhan.exe"
+; --- 設定 ---
+LONG_PRESS_MS := 100  ; 長押し判定の閾値（ミリ秒）
 
-;capslockキー
-/*
-F13::
-{
-    ; 押下時に即座に切り替え
-    Send "{sc029}"
-
-    ; 長押し判定（0.3秒待つ）
-    if !KeyWait("F13", "T0.3")
-    {
-        ; 長押し：離すまで待って、また切り替え（元に戻る）
-        KeyWait "F13"
-        Send "{sc029}"
-    }
-    ; 短押し：何もしない（切り替えたまま）
-}
-*/
 F13::
 {
     global imeGauge, imeProgress, imeLabel, gaugeFilled
@@ -42,7 +25,7 @@ F13::
 
     ; ゲージアニメーション
     startTime := A_TickCount
-    duration := 200  ; ここで長押しの秒数を決める
+    duration := LONG_PRESS_MS
 
     while GetKeyState("F13", "P") {
         elapsed := A_TickCount - startTime
@@ -61,17 +44,56 @@ F13::
 
     ; キーを離したら実行
     if gaugeFilled {
-        Run(zenhanPath " 1", , "Hide")
+        Send "{vk1C}"  ; 長押し → 変換キー（IME ON）
     } else {
-        Run(zenhanPath " 0", , "Hide")
+        Send "{vk1D}"  ; 短押し → 無変換キー（IME OFF）
     }
 
     imeGauge.Destroy()
 }
 ~Esc::
 {
-    Run(zenhanPath " 0", , "Hide")
+    Send "{vk1D}"  ; Esc押下時 → 無変換キー（IME OFF）
 }
+
+~LCtrl Up::
+{
+    if (A_PriorKey = "LControl")
+        Send "{Escape}"
+}
+
++Space::Backspace
+
+F8::
+{
+    prevHwnd := WinGetID("A")
+    WinActivate("ahk_exe msedge.exe")
+    WinWaitActive("ahk_exe msedge.exe", , 1)
+    Send("{Media_Play_Pause}")
+    WinActivate(prevHwnd)
+}
+
+; =============================================================================
+; 以下コメントアウト（未使用）
+; =============================================================================
+
+;capslockキー
+/*
+F13::
+{
+    ; 押下時に即座に切り替え
+    Send "{sc029}"
+
+    ; 長押し判定（0.3秒待つ）
+    if !KeyWait("F13", "T0.3")
+    {
+        ; 長押し：離すまで待って、また切り替え（元に戻る）
+        KeyWait "F13"
+        Send "{sc029}"
+    }
+    ; 短押し：何もしない（切り替えたまま）
+}
+*/
 
 /*
 $;::
@@ -90,6 +112,7 @@ $-::
         Send ";"
 }
 */
+
 /*
 ~LAlt Up::
 {
@@ -97,13 +120,6 @@ $-::
         Send "{Escape}"
 }
 */
-~LCtrl Up::
-{
-    if (A_PriorKey = "LControl")
-        Send "{Escape}"
-}
-
-+Space::Backspace
 
 /*
 Space & h::Left
@@ -123,6 +139,7 @@ Space & c::8
 Space & v::9
 Space & b::0
 */
+
 ; Win+Alt+矢印でマウス操作
 /*
 #!Left::MouseMove(-20, 0, 0, "R")
@@ -132,6 +149,7 @@ Space & b::0
 #!Enter::Click
 #!+Enter::Click "Right"
 */
+
 ; Space単押しでスペースを、Shift+SpaceでBackspace
 /*
 *Space Up::
@@ -144,15 +162,6 @@ Space & b::0
     }
 }
 */
-
-F8::
-{
-    prevHwnd := WinGetID("A")
-    WinActivate("ahk_exe msedge.exe")
-    WinWaitActive("ahk_exe msedge.exe", , 1)
-    Send("{Media_Play_Pause}")
-    WinActivate(prevHwnd)
-}
 
 /*
 ; --- Edge のとき ---
@@ -208,7 +217,7 @@ F13::
 {
     if !KeyWait("F13", "T0.3")
     {
-        Send "^c"       
+        Send "^c"
         Tooltip "Copied!"
         SetTimer () => Tooltip(), -1000
         KeyWait "F13"
@@ -223,4 +232,3 @@ F10::Send("{Volume_Up}")
 F9::Send("{Volume_Down}")
 
 */
-
