@@ -138,6 +138,45 @@ config.keys = {
     mods = "CTRL",
     action = act.PasteFrom("Clipboard"),
   },
+  -- コピーモード + 行選択開始
+  {
+    key = "v",
+    mods = "CTRL|SHIFT",
+    action = wezterm.action.EmitEvent("copy-mode-line-select"),
+  },
+  -- コピーモード + カーソル移動 (vim風)
+  {
+    key = "h",
+    mods = "CTRL",
+    action = wezterm.action_callback(function(window, pane)
+      window:perform_action(act.ActivateCopyMode, pane)
+      window:perform_action(act.CopyMode("MoveLeft"), pane)
+    end),
+  },
+  {
+    key = "j",
+    mods = "CTRL",
+    action = wezterm.action_callback(function(window, pane)
+      window:perform_action(act.ActivateCopyMode, pane)
+      window:perform_action(act.CopyMode("MoveDown"), pane)
+    end),
+  },
+  {
+    key = "k",
+    mods = "CTRL",
+    action = wezterm.action_callback(function(window, pane)
+      window:perform_action(act.ActivateCopyMode, pane)
+      window:perform_action(act.CopyMode("MoveUp"), pane)
+    end),
+  },
+  {
+    key = "l",
+    mods = "CTRL",
+    action = wezterm.action_callback(function(window, pane)
+      window:perform_action(act.ActivateCopyMode, pane)
+      window:perform_action(act.CopyMode("MoveRight"), pane)
+    end),
+  },
   {
     key = "0",
     mods = "CTRL",
@@ -302,10 +341,25 @@ wezterm.on("window-focus-changed", function(window, pane)
   end
 end)
 
+wezterm.GLOBAL.in_copy_mode = wezterm.GLOBAL.in_copy_mode or false
+
 wezterm.on("update-right-status", function(window, pane)
   apply_transparency_mode(window)
+
+  local key_table = window:active_key_table()
+  if key_table == "copy_mode" and not wezterm.GLOBAL.in_copy_mode then
+    wezterm.GLOBAL.in_copy_mode = true
+    ime_off()
+  elseif key_table ~= "copy_mode" then
+    wezterm.GLOBAL.in_copy_mode = false
+  end
 end)
 
+
+wezterm.on("copy-mode-line-select", function(window, pane)
+  window:perform_action(act.ActivateCopyMode, pane)
+  window:perform_action(act.CopyMode({ SetSelectionMode = "Line" }), pane)
+end)
 
 wezterm.on("toggle-transparency-mode", function(window, pane)
   wezterm.GLOBAL.transparency_mode = (wezterm.GLOBAL.transparency_mode + 1) % 3
@@ -347,5 +401,29 @@ wezterm.on("decrease-opacity", function(window, pane)
   wezterm.GLOBAL.opacity = math.max(0.1, wezterm.GLOBAL.opacity - 0.1)
   apply_transparency_mode(window)
 end)
+
+----------------------------------------------------
+-- Copy Mode キーテーブル拡張
+----------------------------------------------------
+local copy_mode = wezterm.gui.default_key_tables().copy_mode
+local copy_mode_extra = {
+  { key = "h", mods = "CTRL", action = act.CopyMode("MoveLeft") },
+  { key = "j", mods = "CTRL", action = act.CopyMode("MoveDown") },
+  { key = "k", mods = "CTRL", action = act.CopyMode("MoveUp") },
+  { key = "l", mods = "CTRL", action = act.CopyMode("MoveRight") },
+  -- 矩形選択
+  { key = "v", mods = "CTRL", action = act.CopyMode({ SetSelectionMode = "Block" }) },
+  -- ペースト（コピーモード終了 → 貼り付け）
+  { key = "p", mods = "NONE", action = act.Multiple({
+    act.CopyMode("Close"),
+    act.PasteFrom("Clipboard"),
+  })},
+}
+for _, k in ipairs(copy_mode_extra) do
+  table.insert(copy_mode, k)
+end
+config.key_tables = {
+  copy_mode = copy_mode,
+}
 
 return config
