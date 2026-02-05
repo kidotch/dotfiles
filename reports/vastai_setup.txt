@@ -1,7 +1,11 @@
 git clone https://github.com/yourname/dotfiles.git
 cd dotfiles
+chmod +x ./install.sh
 ./install.sh
-sudo ./scripts/setup-locale-tmux.sh
+chmod +x ./scripts/setup-locale-tmux.sh
+./scripts/setup-locale-tmux.sh
 
 export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
+
+tmux kill-session
