@@ -6,7 +6,7 @@ TraySetIcon(A_ScriptDir "\icon1.ico")
 A_IconTip := "デフォルト"
 
 ; --- 設定 ---
-LONG_PRESS_MS := 100  ; 長押し判定の閾値（ミリ秒）
+LONG_PRESS_MS := 160  ; 長押し判定の閾値（ミリ秒）
 
 F13::
 {
