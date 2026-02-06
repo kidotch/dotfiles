@@ -4,7 +4,7 @@
 
 dotfilesリポジトリで設定ファイルを一元管理し、複数のPCで同期する方法。
 
-- リポジトリ: https://github.com/ahchan-d/dotfiles.git
+- リポジトリ: https://github.com/kidotch/dotfiles.git
 - 管理対象:
   - `wezterm/` - WezTerm設定
   - `nvim/` - Neovim設定
@@ -30,7 +30,7 @@ git push
 
 ```bash
 cd ~
-git clone https://github.com/ahchan-d/dotfiles.git
+git clone https://github.com/kidotch/dotfiles.git
 ```
 
 ### 2. シンボリックリンクの作成
