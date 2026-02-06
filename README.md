@@ -109,5 +109,6 @@ alias dotsync='cd ~/dotfiles && git add . && git commit -m "Update dotfiles" && 
 
 ```
 curl -fsSL https://claude.ai/install.sh | bash
+curl -sL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash
 ```
 
