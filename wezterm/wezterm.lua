@@ -231,6 +231,25 @@ config.keys = {
     mods = "CTRL|SHIFT",
     action = wezterm.action.MoveTabRelative(1),
   },]]
+  -- スクロール
+  {
+    key = "PageUp",
+    action = act.ScrollByPage(-0.25),
+  },
+  {
+    key = "PageDown",
+    action = act.ScrollByPage(0.25),
+  },
+  {
+    key = "Home",
+    mods = "SHIFT",
+    action = act.ScrollToTop,
+  },
+  {
+    key = "End",
+    mods = "SHIFT",
+    action = act.ScrollToBottom,
+  },
 }
 
 ----------------------------------------------------
@@ -353,6 +372,17 @@ wezterm.on("update-right-status", function(window, pane)
   elseif key_table ~= "copy_mode" then
     wezterm.GLOBAL.in_copy_mode = false
   end
+
+  -- コピーモード表示
+  local status = ""
+  if key_table == "copy_mode" then
+    status = wezterm.format({
+      { Background = { Color = "#e06c75" } },
+      { Foreground = { Color = "#282c34" } },
+      { Text = "  COPY  " },
+    })
+  end
+  window:set_right_status(status)
 end)
 
 
