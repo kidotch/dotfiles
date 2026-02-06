@@ -1,11 +1,5 @@
 # Dotfiles 運用ガイド
 
-## 毎回実行するコマンド
-
-```
-curl -fsSL https://claude.ai/install.sh | bash
-```
-
 ## 概要
 
 dotfilesリポジトリで設定ファイルを一元管理し、複数のPCで同期する方法。
@@ -110,3 +104,10 @@ alias dotsync='cd ~/dotfiles && git add . && git commit -m "Update dotfiles" && 
 |----------|----------|
 | `~/.config/wezterm` | `~/dotfiles/wezterm` |
 | `~/AppData/Local/nvim` | `~/dotfiles/nvim` |
+
+## 毎回実行するコマンド
+
+```
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
