@@ -1,5 +1,11 @@
 # Dotfiles 運用ガイド
 
+## 毎回実行するコマンド
+
+```
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
 ## 概要
 
 dotfilesリポジトリで設定ファイルを一元管理し、複数のPCで同期する方法。
