@@ -62,13 +62,13 @@ config.keys = {
     action = wezterm.action.EmitEvent("toggle-transparency-mode"),
   },
   {
-    key = "o",
+    key = "]",
     mods = "CTRL",
     action = wezterm.action.EmitEvent("increase-opacity"),
   },
   {
-    key = "o",
-    mods = "CTRL|SHIFT",
+    key = "[",
+    mods = "CTRL",
     action = wezterm.action.EmitEvent("decrease-opacity"),
   },
   -- ペイン入れ替え
