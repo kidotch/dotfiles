@@ -48,6 +48,65 @@ config.use_ime = true
 config.adjust_window_size_when_changing_font_size = false
 
 ----------------------------------------------------
+-- Snippets (Ctrl+: で一覧表示)
+-- 組み込みスニペット: ここに直接書く
+-- 追加スニペット: snippets.txt に自動保存される
+----------------------------------------------------
+local snippets_file = wezterm.config_dir .. "/snippets.txt"
+
+local builtin_snippets = {
+  { cmd = "curl -fsSL https://claude.ai/install.sh | bash",                                        desc = "Claude Code install" },
+  { cmd = "curl -sL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash",  desc = "dotfiles bootstrap" },
+  { cmd = 'git add . && git commit -m "update" && git push' },
+}
+
+local function load_snippets_from_file()
+  local f = io.open(snippets_file, "r")
+  if not f then return {} end
+  local result = {}
+  for line in f:lines() do
+    if line ~= "" then
+      table.insert(result, { cmd = line })
+    end
+  end
+  f:close()
+  return result
+end
+
+local function save_snippet_to_file(cmd)
+  local f = io.open(snippets_file, "a")
+  if not f then return end
+  f:write(cmd .. "\n")
+  f:close()
+end
+
+-- Snippet label colors
+local C = {
+  cmd   = "\x1b[38;2;86;182;194m",   -- cyan (コマンド)
+  desc  = "\x1b[38;2;108;113;126m",   -- grey (説明)
+  add   = "\x1b[38;2;152;195;121m",   -- green (追加ボタン)
+  reset = "\x1b[0m",
+}
+
+local function build_snippet_choices()
+  local choices = {}
+  local all = {}
+  for _, s in ipairs(builtin_snippets) do table.insert(all, s) end
+  for _, s in ipairs(load_snippets_from_file()) do table.insert(all, s) end
+
+  for _, s in ipairs(all) do
+    local label = C.cmd .. s.cmd .. C.reset
+    if s.desc then
+      label = label .. C.desc .. "  -- " .. s.desc .. C.reset
+    end
+    table.insert(choices, { label = label, id = s.cmd })
+  end
+
+  table.insert(choices, { label = C.add .. "+ Add new snippet" .. C.reset, id = "__add__" })
+  return choices
+end
+
+----------------------------------------------------
 -- Keybinds
 ----------------------------------------------------
 config.keys = {
@@ -231,6 +290,32 @@ config.keys = {
     mods = "CTRL|SHIFT",
     action = wezterm.action.MoveTabRelative(1),
   },]]
+  -- コマンドパレット
+  {
+    key = ":",
+    mods = "CTRL",
+    action = wezterm.action_callback(function(window, pane)
+      window:perform_action(act.InputSelector({
+        title = "Snippets",
+        choices = build_snippet_choices(),
+        action = wezterm.action_callback(function(window, pane, id, label)
+          if not id then return end
+          if id == "__add__" then
+            window:perform_action(act.PromptInputLine({
+              description = "Enter command to add:",
+              action = wezterm.action_callback(function(window, pane, line)
+                if line and line ~= "" then
+                  save_snippet_to_file(line)
+                end
+              end),
+            }), pane)
+          else
+            pane:send_text(id .. "\n")
+          end
+        end),
+      }), pane)
+    end),
+  },
   -- スクロール
   {
     key = "PageUp",
