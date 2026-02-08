@@ -78,7 +78,7 @@ function Get-VastActiveInstancesText {
     }
 }
 
-function ssh-vastai {
+function ssh-vai {
     param(
         [string]$InstanceId,
         [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
