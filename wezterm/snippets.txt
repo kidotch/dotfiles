@@ -8,6 +8,8 @@ export HOME=/dev/shm/home && mkdir -p $HOME
 ---
 export RCLONE_CONFIG=/tmp/rclone.conf
 ---
+export RCLONE_CONFIG=/dev/shm/rclone.conf
+---
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt-get install -y nodejs
 ---
