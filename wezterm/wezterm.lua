@@ -49,56 +49,55 @@ config.adjust_window_size_when_changing_font_size = false
 
 ----------------------------------------------------
 -- Snippets (Ctrl+: で一覧表示)
--- 組み込みスニペット: ここに直接書く
--- 追加スニペット: snippets.txt に自動保存される
+-- snippets.txt に --- 区切りで管理
 ----------------------------------------------------
 local snippets_file = wezterm.config_dir .. "/snippets.txt"
-
-local builtin_snippets = {
-  { cmd = "curl -fsSL https://claude.ai/install.sh | bash",                                        desc = "Claude Code install" },
-  { cmd = "curl -sL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash",  desc = "dotfiles bootstrap" },
-  { cmd = 'git add . && git commit -m "update" && git push' },
-}
 
 local function load_snippets_from_file()
   local f = io.open(snippets_file, "r")
   if not f then return {} end
+  local content = f:read("*a")
+  f:close()
   local result = {}
-  for line in f:lines() do
-    if line ~= "" then
-      table.insert(result, { cmd = line })
+  local block = {}
+  for line in content:gmatch("([^\n]*)\n?") do
+    if line == "---" then
+      if #block > 0 then
+        table.insert(result, { cmd = table.concat(block, "\n") })
+        block = {}
+      end
+    else
+      if line ~= "" or #block > 0 then
+        table.insert(block, line)
+      end
     end
   end
-  f:close()
+  -- 末尾に --- がなくても最後のブロックを読み込む（後方互換）
+  if #block > 0 then
+    table.insert(result, { cmd = table.concat(block, "\n") })
+  end
   return result
 end
 
 local function save_snippet_to_file(cmd)
   local f = io.open(snippets_file, "a")
   if not f then return end
-  f:write(cmd .. "\n")
+  f:write(cmd .. "\n---\n")
   f:close()
 end
 
 -- Snippet label colors
 local C = {
   cmd   = "\x1b[38;2;86;182;194m",   -- cyan (コマンド)
-  desc  = "\x1b[38;2;108;113;126m",   -- grey (説明)
   add   = "\x1b[38;2;152;195;121m",   -- green (追加ボタン)
   reset = "\x1b[0m",
 }
 
 local function build_snippet_choices()
   local choices = {}
-  local all = {}
-  for _, s in ipairs(builtin_snippets) do table.insert(all, s) end
-  for _, s in ipairs(load_snippets_from_file()) do table.insert(all, s) end
-
-  for _, s in ipairs(all) do
-    local label = C.cmd .. s.cmd .. C.reset
-    if s.desc then
-      label = label .. C.desc .. "  -- " .. s.desc .. C.reset
-    end
+  for _, s in ipairs(load_snippets_from_file()) do
+    local display = s.cmd:gsub("\n", "↵")
+    local label = C.cmd .. display .. C.reset
     table.insert(choices, { label = label, id = s.cmd })
   end
 
