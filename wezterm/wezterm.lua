@@ -63,6 +63,7 @@ local function load_snippets_from_file()
   for line in content:gmatch("([^\n]*)\n?") do
     if line == "---" then
       if #block > 0 then
+        while #block > 0 and block[#block] == "" do table.remove(block) end
         table.insert(result, { cmd = table.concat(block, "\n") })
         block = {}
       end
@@ -74,6 +75,7 @@ local function load_snippets_from_file()
   end
   -- 末尾に --- がなくても最後のブロックを読み込む（後方互換）
   if #block > 0 then
+    while #block > 0 and block[#block] == "" do table.remove(block) end
     table.insert(result, { cmd = table.concat(block, "\n") })
   end
   return result
@@ -309,7 +311,7 @@ config.keys = {
               end),
             }), pane)
           else
-            pane:send_text(id .. "\n")
+            pane:send_text(id)
           end
         end),
       }), pane)
