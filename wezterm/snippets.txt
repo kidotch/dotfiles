@@ -25,3 +25,5 @@ vastai create instance <OFFER_ID> --image vastai/base-image:@vastai-automatic-ta
 ---
 git clone https://github.com/26hzhang/VSLNet.git
 ---
+export RCLONE_CONFIG_PASS=''
+---

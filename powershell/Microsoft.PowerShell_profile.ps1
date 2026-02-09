@@ -112,3 +112,37 @@ function ssh-vast {
 
     throw "Unexpected ssh-url format: $u"
 }
+
+function sync-vast-rclone {
+    param(
+        [string]$InstanceId,
+        [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
+    )
+
+    if (-not $InstanceId) {
+        $active = Get-VastActiveInstancesText
+        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+
+        if ($active.Count -eq 1) {
+            $InstanceId = $active[0].Id
+        } else {
+            Write-Host "Multiple active instances found:"
+            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
+            $choice = Read-Host "Pick number"
+            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
+            else { Write-Host "Invalid choice."; return }
+        }
+    }
+
+    $u = (vastai ssh-url $InstanceId).Trim()
+
+    if ($u -match '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
+        $src = "$env:APPDATA\rclone\rclone.conf"
+        $cmd = "scp -P $($Matches.port) -i `"$KeyPath`" `"$src`" $($Matches.user)@$($Matches.host):/dev/shm/rclone.conf"
+        Write-Host ">> $cmd"
+        Invoke-Expression $cmd
+        return
+    }
+
+    throw "Unexpected ssh-url format: $u"
+}
