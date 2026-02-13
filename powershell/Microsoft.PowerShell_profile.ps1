@@ -47,26 +47,26 @@ function gsclip {
     Write-Host "Copied secret '$Name' to clipboard"
 }
 
-function Get-VastActiveInstancesText {
+function Get-VastInstancesText {
+    param([string]$StatusPattern = 'running|loading|starting|boot')
+
     $lines = vastai show instances 2>$null
     if (-not $lines) { return @() }
 
     $rows = $lines | Where-Object { $_ -match '^\d+\s+\d+\s+' }
 
     foreach ($line in $rows) {
-        # ID と Status
         if ($line -notmatch '^(?<id>\d+)\s+\d+\s+(?<status>\w+)\s+') { continue }
 
         $id = $Matches.id
         $status = $Matches.status
 
-        # SSHホストとポート（ssh?.vast.ai PORT）
         if ($line -notmatch '(?<sshHost>ssh\d+\.vast\.ai)\s+(?<sshPort>\d{2,6})') { continue }
 
         $sshHost = $Matches.sshHost
         $sshPort = $Matches.sshPort
 
-        if ($status -match 'running|loading|starting|boot') {
+        if ($status -match $StatusPattern) {
             [pscustomobject]@{
                 Id      = $id
                 Status  = $status
@@ -78,39 +78,43 @@ function Get-VastActiveInstancesText {
     }
 }
 
+function _Select-VaiInstance {
+    param([string]$InstanceId, [string]$StatusPattern = 'running|loading|starting|boot')
+    if ($InstanceId) { return $InstanceId }
+
+    $active = Get-VastInstancesText -StatusPattern $StatusPattern
+    if (-not $active -or $active.Count -eq 0) { Write-Host "No matching instances found."; return $null }
+    if ($active.Count -eq 1) { return $active[0].Id }
+
+    Write-Host "Multiple active instances found:"
+    for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
+    $choice = Read-Host "Pick number"
+    if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { return $active[[int]$choice].Id }
+    Write-Host "Invalid choice."; return $null
+}
+
+function _Get-VaiSshInfo {
+    param([string]$InstanceId)
+    $u = (vastai ssh-url $InstanceId).Trim()
+    if ($u -notmatch '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
+        throw "Unexpected ssh-url format: $u"
+    }
+    return @{ User = $Matches.user; Host = $Matches.host; Port = $Matches.port }
+}
+
 function vai-ssh {
     param(
         [string]$InstanceId,
         [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
     )
 
-    # ID省略なら running/loading を一覧から選ぶ（ここは今まで通り）
-    if (-not $InstanceId) {
-        $active = Get-VastActiveInstancesText
-        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+    $InstanceId = _Select-VaiInstance $InstanceId
+    if (-not $InstanceId) { return }
 
-        if ($active.Count -eq 1) {
-            $InstanceId = $active[0].Id
-        } else {
-            Write-Host "Multiple active instances found:"
-            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
-            $choice = Read-Host "Pick number"
-            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
-            else { Write-Host "Invalid choice."; return }
-        }
-    }
-
-    # 接続情報は必ず ssh-url から取る（ここが安定）
-    $u = (vastai ssh-url $InstanceId).Trim()
-
-    if ($u -match '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
-        $cmd = "ssh $($Matches.user)@$($Matches.host) -p $($Matches.port) -i `"$KeyPath`" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        Write-Host ">> $cmd"
-        Invoke-Expression $cmd
-        return
-    }
-
-    throw "Unexpected ssh-url format: $u"
+    $info = _Get-VaiSshInfo $InstanceId
+    $cmd = "ssh $($info.User)@$($info.Host) -p $($info.Port) -i `"$KeyPath`" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    Write-Host ">> $cmd"
+    Invoke-Expression $cmd
 }
 
 function vai-sync-rclone {
@@ -119,32 +123,14 @@ function vai-sync-rclone {
         [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
     )
 
-    if (-not $InstanceId) {
-        $active = Get-VastActiveInstancesText
-        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+    $InstanceId = _Select-VaiInstance $InstanceId
+    if (-not $InstanceId) { return }
 
-        if ($active.Count -eq 1) {
-            $InstanceId = $active[0].Id
-        } else {
-            Write-Host "Multiple active instances found:"
-            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
-            $choice = Read-Host "Pick number"
-            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
-            else { Write-Host "Invalid choice."; return }
-        }
-    }
-
-    $u = (vastai ssh-url $InstanceId).Trim()
-
-    if ($u -match '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
-        $src = "$env:APPDATA\rclone\rclone.conf"
-        $cmd = "scp -P $($Matches.port) -i `"$KeyPath`" `"$src`" $($Matches.user)@$($Matches.host):/dev/shm/rclone.conf"
-        Write-Host ">> $cmd"
-        Invoke-Expression $cmd
-        return
-    }
-
-    throw "Unexpected ssh-url format: $u"
+    $info = _Get-VaiSshInfo $InstanceId
+    $src = "$env:APPDATA\rclone\rclone.conf"
+    $cmd = "scp -P $($info.Port) -i `"$KeyPath`" `"$src`" $($info.User)@$($info.Host):/dev/shm/rclone.conf"
+    Write-Host ">> $cmd"
+    Invoke-Expression $cmd
 }
 
 function vai-config {
@@ -155,44 +141,19 @@ function vai-config {
         [string]$HostPrefix = "vast"
     )
 
-    # --- ID省略なら running/loading を一覧から選ぶ（あなたのアルゴリズムそのまま） ---
-    if (-not $InstanceId) {
-        $active = Get-VastActiveInstancesText
-        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+    $InstanceId = _Select-VaiInstance $InstanceId
+    if (-not $InstanceId) { return }
 
-        if ($active.Count -eq 1) {
-            $InstanceId = $active[0].Id
-        } else {
-            Write-Host "Multiple active instances found:"
-            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
-            $choice = Read-Host "Pick number"
-            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
-            else { Write-Host "Invalid choice."; return }
-        }
-    }
+    $info = _Get-VaiSshInfo $InstanceId
 
-    # --- ssh-url から接続情報を取る（安定） ---
-    $u = (vastai ssh-url $InstanceId).Trim()
-    if ($u -notmatch '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
-        throw "Unexpected ssh-url format: $u"
-    }
-
-    $user = $Matches.user
-    $sshHost = $Matches.host
-    $port = $Matches.port
-
-    $alias = $HostPrefix
-
-    # --- 出力ファイル準備 ---
     $sshDir = Split-Path -Parent $OutPath
     if (-not (Test-Path $sshDir)) { New-Item -ItemType Directory -Path $sshDir | Out-Null }
 
-    # --- ファイル全体を上書き（常に1エントリのみ） ---
     $block = @"
-Host $alias
-  HostName $sshHost
-  User $user
-  Port $port
+Host $HostPrefix
+  HostName $($info.Host)
+  User $($info.User)
+  Port $($info.Port)
   IdentityFile $KeyPath
   IdentitiesOnly yes
   PreferredAuthentications publickey
@@ -203,8 +164,8 @@ Host $alias
 
     Set-Content -Path $OutPath -Value $block -NoNewline
 
-    Write-Host "Try: ssh $alias"
-    Write-Host "VSCode: Remote-SSH -> $alias"
+    Write-Host "Try: ssh $HostPrefix"
+    Write-Host "VSCode: Remote-SSH -> $HostPrefix"
 }
 
 $GHQ_KIDOTCH = "$env:USERPROFILE\ghq\github.com\kidotch"
@@ -229,20 +190,8 @@ function vai-scp {
     $sourceInputs = $Paths[0..($Paths.Count - 2)]
     $remotePath = $Paths[-1]
 
-    if (-not $InstanceId) {
-        $active = Get-VastActiveInstancesText
-        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
-
-        if ($active.Count -eq 1) {
-            $InstanceId = $active[0].Id
-        } else {
-            Write-Host "Multiple active instances found:"
-            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
-            $choice = Read-Host "Pick number"
-            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
-            else { Write-Host "Invalid choice."; return }
-        }
-    }
+    $InstanceId = _Select-VaiInstance $InstanceId
+    if (-not $InstanceId) { return }
 
     $resolvedSources = @()
     $recursive = $false
@@ -261,66 +210,55 @@ function vai-scp {
 
     $resolvedSources = $resolvedSources | Select-Object -Unique
 
-    $u = (vastai ssh-url $InstanceId).Trim()
-
-    if ($u -match '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
-        $remotePathForScp = $remotePath
-        if ($remotePath -match '\s') {
-            $escaped = $remotePath -replace "'", "'\\''"
-            $remotePathForScp = "'$escaped'"
-        }
-
-        $remote = "$($Matches.user)@$($Matches.host):$remotePathForScp"
-        $scpArgs = @("-P", $Matches.port, "-i", $KeyPath)
-        if ($recursive) { $scpArgs += "-r" }
-        $scpArgs += $resolvedSources
-        $scpArgs += $remote
-
-        $preview = "scp " + (($scpArgs | ForEach-Object {
-            if ($_ -match '\s') { "`"$_`"" } else { "$_" }
-        }) -join " ")
-
-        Write-Host ">> $preview"
-        & scp @scpArgs
-
-        if ($LASTEXITCODE -ne 0) {
-            throw "scp failed with exit code $LASTEXITCODE"
-        }
-        return
+    $info = _Get-VaiSshInfo $InstanceId
+    $remotePathForScp = $remotePath
+    if ($remotePath -match '\s') {
+        $escaped = $remotePath -replace "'", "'\\''"
+        $remotePathForScp = "'$escaped'"
     }
 
-    throw "Unexpected ssh-url format: $u"
+    $remote = "$($info.User)@$($info.Host):$remotePathForScp"
+    $scpArgs = @("-P", $info.Port, "-i", $KeyPath)
+    if ($recursive) { $scpArgs += "-r" }
+    $scpArgs += $resolvedSources
+    $scpArgs += $remote
+
+    $preview = "scp " + (($scpArgs | ForEach-Object {
+        if ($_ -match '\s') { "`"$_`"" } else { "$_" }
+    }) -join " ")
+
+    Write-Host ">> $preview"
+    & scp @scpArgs
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "scp failed with exit code $LASTEXITCODE"
+    }
 }
 
-function vai-destroy {
+function _Invoke-VaiInstanceAction {
     param(
-        [string]$InstanceId
+        [string]$InstanceId,
+        [string]$Action,
+        [string]$PastTense,
+        [string]$StatusPattern = 'running|loading|starting|boot'
     )
 
-    if (-not $InstanceId) {
-        $active = Get-VastActiveInstancesText
-        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+    $InstanceId = _Select-VaiInstance $InstanceId $StatusPattern
+    if (-not $InstanceId) { return }
 
-        if ($active.Count -eq 1) {
-            $InstanceId = $active[0].Id
-        } else {
-            Write-Host "Multiple active instances found:"
-            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
-            $choice = Read-Host "Pick number"
-            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
-            else { Write-Host "Invalid choice."; return }
-        }
-    }
-
-    Write-Host "Destroying instance $InstanceId ..."
-    vastai destroy instance $InstanceId
+    Write-Host "$Action instance $InstanceId ..."
+    vastai $Action instance $InstanceId
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Instance $InstanceId destroyed."
+        Write-Host "Instance $InstanceId $PastTense."
     } else {
-        Write-Host "Failed to destroy instance $InstanceId (exit code $LASTEXITCODE)" -ForegroundColor Red
+        Write-Host "Failed to $Action instance $InstanceId (exit code $LASTEXITCODE)" -ForegroundColor Red
     }
 }
+
+function vai-stop    { param([string]$InstanceId) _Invoke-VaiInstanceAction $InstanceId 'stop' 'stopped' }
+function vai-start   { param([string]$InstanceId) _Invoke-VaiInstanceAction $InstanceId 'start' 'started' 'exited|stopped' }
+function vai-destroy { param([string]$InstanceId) _Invoke-VaiInstanceAction $InstanceId 'destroy' 'destroyed' '.*' }
 
 # PSReadLine の入力色をテーマに応じて切り替え
 Import-Module PSReadLine -ErrorAction SilentlyContinue
