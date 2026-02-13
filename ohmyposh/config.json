@@ -7,7 +7,7 @@
         {
           "background": "#0077c2",
           "foreground": "#ffffff",
-          "leading_diamond": "\u256d\u2500\ue0b6",
+          "leading_diamond": "\ue0b6",
           "style": "diamond",
           "template": " {{ .Name }} ",
           "type": "shell"
@@ -92,7 +92,6 @@
         {
           "foreground": "#21c7c7",
           "style": "plain",
-          "template": "\u2570\u2500",
           "type": "text"
         },
         {
