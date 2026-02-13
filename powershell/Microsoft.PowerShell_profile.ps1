@@ -104,7 +104,7 @@ function vai-ssh {
     $u = (vastai ssh-url $InstanceId).Trim()
 
     if ($u -match '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
-        $cmd = "ssh $($Matches.user)@$($Matches.host) -p $($Matches.port) -i `"$KeyPath`""
+        $cmd = "ssh $($Matches.user)@$($Matches.host) -p $($Matches.port) -i `"$KeyPath`" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         Write-Host ">> $cmd"
         Invoke-Expression $cmd
         return
@@ -206,6 +206,8 @@ Host $alias
     Write-Host "Try: ssh $alias"
     Write-Host "VSCode: Remote-SSH -> $alias"
 }
+
+$GHQ_KIDOTCH = "$env:USERPROFILE\ghq\github.com\kidotch"
 
 $env:Path += ";C:\Users\ahcha\Reaper"
 
@@ -320,15 +322,58 @@ function vai-destroy {
     }
 }
 
-# PSReadLine の入力色を上書き（カラースキームは変えない）
+# PSReadLine の入力色をテーマに応じて切り替え
 Import-Module PSReadLine -ErrorAction SilentlyContinue
 
-Set-PSReadLineOption -Colors @{
-  Default   = 'Black'       # ← これが本命（白背景でも見える）
-  Command   = 'DarkBlue'
-  Parameter = 'DarkCyan'
-  String    = 'DarkGreen'
-  Operator  = 'DarkMagenta'
-  Number    = 'DarkYellow'
+$_wtSettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+
+function _Set-PSReadLineLight {
+    Set-PSReadLineOption -Colors @{
+        Default   = 'Black'
+        Command   = 'DarkBlue'
+        Parameter = 'DarkCyan'
+        String    = 'DarkGreen'
+        Operator  = 'DarkMagenta'
+        Number    = 'DarkYellow'
+    }
+}
+
+function _Set-PSReadLineDark {
+    Set-PSReadLineOption -Colors @{
+        Default   = 'White'
+        Command   = 'Cyan'
+        Parameter = 'DarkCyan'
+        String    = 'Green'
+        Operator  = 'Magenta'
+        Number    = 'Yellow'
+    }
+}
+
+function Set-TerminalDark {
+    $json = Get-Content $_wtSettingsPath -Raw | ConvertFrom-Json
+    $json.profiles.defaults.colorScheme = 'Dimidium'
+    $json.theme = 'dark'
+    $json | ConvertTo-Json -Depth 10 | Set-Content $_wtSettingsPath
+    _Set-PSReadLineDark
+}
+
+function Set-TerminalLight {
+    $json = Get-Content $_wtSettingsPath -Raw | ConvertFrom-Json
+    $json.profiles.defaults.colorScheme = 'One Half Light (modified)'
+    $json.theme = 'light'
+    $json | ConvertTo-Json -Depth 10 | Set-Content $_wtSettingsPath
+    _Set-PSReadLineLight
+}
+
+# 起動時: 現在のスキームに合わせてPSReadLineの色を設定
+if (Test-Path $_wtSettingsPath) {
+    $json = Get-Content $_wtSettingsPath -Raw | ConvertFrom-Json
+    if ($json.profiles.defaults.colorScheme -eq 'One Half Light (modified)') {
+        _Set-PSReadLineLight
+    } else {
+        _Set-PSReadLineDark
+    }
+} else {
+    _Set-PSReadLineDark
 }
 
