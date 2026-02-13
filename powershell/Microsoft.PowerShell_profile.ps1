@@ -78,7 +78,7 @@ function Get-VastActiveInstancesText {
     }
 }
 
-function ssh-vast {
+function vai-ssh {
     param(
         [string]$InstanceId,
         [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
@@ -113,7 +113,7 @@ function ssh-vast {
     throw "Unexpected ssh-url format: $u"
 }
 
-function sync-vast-rclone {
+function vai-sync-rclone {
     param(
         [string]$InstanceId,
         [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
@@ -146,3 +146,189 @@ function sync-vast-rclone {
 
     throw "Unexpected ssh-url format: $u"
 }
+
+function vai-config {
+    param(
+        [string]$InstanceId,
+        [string]$KeyPath  = "$env:USERPROFILE\.ssh\vastai_key",
+        [string]$OutPath  = "$env:USERPROFILE\.ssh\config.vast",
+        [string]$HostPrefix = "vast"
+    )
+
+    # --- ID省略なら running/loading を一覧から選ぶ（あなたのアルゴリズムそのまま） ---
+    if (-not $InstanceId) {
+        $active = Get-VastActiveInstancesText
+        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+
+        if ($active.Count -eq 1) {
+            $InstanceId = $active[0].Id
+        } else {
+            Write-Host "Multiple active instances found:"
+            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
+            $choice = Read-Host "Pick number"
+            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
+            else { Write-Host "Invalid choice."; return }
+        }
+    }
+
+    # --- ssh-url から接続情報を取る（安定） ---
+    $u = (vastai ssh-url $InstanceId).Trim()
+    if ($u -notmatch '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
+        throw "Unexpected ssh-url format: $u"
+    }
+
+    $user = $Matches.user
+    $sshHost = $Matches.host
+    $port = $Matches.port
+
+    $alias = $HostPrefix
+
+    # --- 出力ファイル準備 ---
+    $sshDir = Split-Path -Parent $OutPath
+    if (-not (Test-Path $sshDir)) { New-Item -ItemType Directory -Path $sshDir | Out-Null }
+
+    # --- ファイル全体を上書き（常に1エントリのみ） ---
+    $block = @"
+Host $alias
+  HostName $sshHost
+  User $user
+  Port $port
+  IdentityFile $KeyPath
+  IdentitiesOnly yes
+  PreferredAuthentications publickey
+  StrictHostKeyChecking accept-new
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
+"@
+
+    Set-Content -Path $OutPath -Value $block -NoNewline
+
+    Write-Host "Try: ssh $alias"
+    Write-Host "VSCode: Remote-SSH -> $alias"
+}
+
+$env:Path += ";C:\Users\ahcha\Reaper"
+
+$env:RCLONE_CONFIG_PASS = "rccdms0835"
+
+function vai-scp {
+    [CmdletBinding(PositionalBinding=$false)]
+    param(
+        [Parameter(Mandatory=$true, Position=0, ValueFromRemainingArguments=$true)]
+        [string[]]$Paths,
+        [string]$InstanceId,
+        [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
+    )
+
+    if (-not $Paths -or $Paths.Count -lt 2) {
+        throw "Usage: scp-vast <source-path...> <remote-path> [-InstanceId <id>] [-KeyPath <path>]"
+    }
+
+    $sourceInputs = $Paths[0..($Paths.Count - 2)]
+    $remotePath = $Paths[-1]
+
+    if (-not $InstanceId) {
+        $active = Get-VastActiveInstancesText
+        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+
+        if ($active.Count -eq 1) {
+            $InstanceId = $active[0].Id
+        } else {
+            Write-Host "Multiple active instances found:"
+            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
+            $choice = Read-Host "Pick number"
+            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
+            else { Write-Host "Invalid choice."; return }
+        }
+    }
+
+    $resolvedSources = @()
+    $recursive = $false
+
+    foreach ($source in $sourceInputs) {
+        $items = @(Get-Item -Path $source -ErrorAction SilentlyContinue)
+        if (-not $items -or $items.Count -eq 0) {
+            throw "Source path not found: $source"
+        }
+
+        foreach ($item in $items) {
+            $resolvedSources += $item.FullName
+            if ($item.PSIsContainer) { $recursive = $true }
+        }
+    }
+
+    $resolvedSources = $resolvedSources | Select-Object -Unique
+
+    $u = (vastai ssh-url $InstanceId).Trim()
+
+    if ($u -match '^ssh://(?<user>[^@]+)@(?<host>[^:]+):(?<port>\d+)$') {
+        $remotePathForScp = $remotePath
+        if ($remotePath -match '\s') {
+            $escaped = $remotePath -replace "'", "'\\''"
+            $remotePathForScp = "'$escaped'"
+        }
+
+        $remote = "$($Matches.user)@$($Matches.host):$remotePathForScp"
+        $scpArgs = @("-P", $Matches.port, "-i", $KeyPath)
+        if ($recursive) { $scpArgs += "-r" }
+        $scpArgs += $resolvedSources
+        $scpArgs += $remote
+
+        $preview = "scp " + (($scpArgs | ForEach-Object {
+            if ($_ -match '\s') { "`"$_`"" } else { "$_" }
+        }) -join " ")
+
+        Write-Host ">> $preview"
+        & scp @scpArgs
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "scp failed with exit code $LASTEXITCODE"
+        }
+        return
+    }
+
+    throw "Unexpected ssh-url format: $u"
+}
+
+function vai-destroy {
+    param(
+        [string]$InstanceId
+    )
+
+    if (-not $InstanceId) {
+        $active = Get-VastActiveInstancesText
+        if (-not $active -or $active.Count -eq 0) { Write-Host "No active instances found."; return }
+
+        if ($active.Count -eq 1) {
+            $InstanceId = $active[0].Id
+        } else {
+            Write-Host "Multiple active instances found:"
+            for ($i=0; $i -lt $active.Count; $i++) { Write-Host "[$i] $($active[$i].Line)" }
+            $choice = Read-Host "Pick number"
+            if ($choice -match '^\d+$' -and [int]$choice -lt $active.Count) { $InstanceId = $active[[int]$choice].Id }
+            else { Write-Host "Invalid choice."; return }
+        }
+    }
+
+    Write-Host "Destroying instance $InstanceId ..."
+    vastai destroy instance $InstanceId
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Instance $InstanceId destroyed."
+    } else {
+        Write-Host "Failed to destroy instance $InstanceId (exit code $LASTEXITCODE)" -ForegroundColor Red
+    }
+}
+
+# PSReadLine の入力色を上書き（カラースキームは変えない）
+Import-Module PSReadLine -ErrorAction SilentlyContinue
+
+Set-PSReadLineOption -Colors @{
+  Default   = 'Black'       # ← これが本命（白背景でも見える）
+  Command   = 'DarkBlue'
+  Parameter = 'DarkCyan'
+  String    = 'DarkGreen'
+  Operator  = 'DarkMagenta'
+  Number    = 'DarkYellow'
+}
+

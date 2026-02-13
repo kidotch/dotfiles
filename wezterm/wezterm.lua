@@ -317,6 +317,20 @@ config.keys = {
       }), pane)
     end),
   },
+  -- マウス選択中に y でコピー（選択なしなら通常入力）
+  {
+    key = "y",
+    mods = "NONE",
+    action = wezterm.action_callback(function(window, pane)
+      local sel = window:get_selection_text_for_pane(pane)
+      if sel and sel ~= "" then
+        window:perform_action(act.CopyTo("Clipboard"), pane)
+        window:perform_action(act.ClearSelection, pane)
+      else
+        window:perform_action(act.SendKey({ key = "y" }), pane)
+      end
+    end),
+  },
   -- スクロール
   {
     key = "PageUp",
