@@ -28,7 +28,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y --no-install-recommends \
   ca-certificates curl git build-essential unzip tmux \
-  gnupg dirmngr xz-utils
+  gnupg dirmngr xz-utils rclone
 
 update-ca-certificates || true
 
@@ -75,6 +75,11 @@ if [ $status -ne 0 ]; then
   curl -fsSL https://claude.ai/install.sh | bash
 fi
 
+# Claude CLI path
+grep -q 'export PATH="$HOME/.local/bin:$PATH"' /root/.bashrc 2>/dev/null || \
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> /root/.bashrc
+  export PATH="$HOME/.local/bin:$PATH"
+
 # ---- Codex CLI ----
 # 公式: npm i -g @openai/codex :contentReference[oaicite:2]{index=2}
 npm install -g @openai/codex
@@ -93,4 +98,8 @@ fi
 ZELLIJ_BLOCK
 
 rm -f /root/.bootstrap_running
+
+command -v claude || true
+command -v rclone || true
+
 echo "✅ BOOTSTRAP DONE"
