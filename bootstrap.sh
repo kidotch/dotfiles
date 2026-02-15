@@ -28,7 +28,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y --no-install-recommends \
   ca-certificates curl git build-essential unzip tmux \
-  gnupg dirmngr xz-utils rclone vim
+  gnupg dirmngr xz-utils rclone vim tzdata
 
 update-ca-certificates || true
 
@@ -100,8 +100,53 @@ grep -q 'export PATH="$HOME/.local/bin:$PATH"' /root/.bashrc 2>/dev/null || \
 npm install -g @openai/codex
 
 # ---- rclone config in tmpfs ----
+if [[ -n "${RCLONE_CONFIG_B64:-}" ]]; then
+  echo "$RCLONE_CONFIG_B64" | base64 -d > /dev/shm/rclone.conf
+  chmod 600 /dev/shm/rclone.conf
+  echo "✅ rclone config written to /dev/shm/rclone.conf"
+fi
 grep -q 'export RCLONE_CONFIG=' /root/.bashrc 2>/dev/null || \
   echo 'export RCLONE_CONFIG=/dev/shm/rclone.conf' >> /root/.bashrc
+
+# ---- Claude Code session sync (pull from GDrive) ----
+export RCLONE_CONFIG=/dev/shm/rclone.conf
+GDRIVE_CLAUDE="${GDRIVE_CLAUDE:-gdrive:dotfiles/claude}"
+if [[ -f /dev/shm/rclone.conf ]]; then
+  echo "📥 Pulling Claude Code sessions from GDrive..."
+  rclone copy "${GDRIVE_CLAUDE}" /root/.claude \
+    --exclude .credentials.json --exclude "*.lock" \
+    2>/dev/null && echo "✅ Claude sessions restored" \
+    || echo "⚠️ Claude session sync failed (first run?)"
+fi
+
+# ---- claude-sync helper ----
+cat > /usr/local/bin/claude-sync << 'CLAUDE_SYNC'
+#!/usr/bin/env bash
+set -euo pipefail
+GDRIVE_CLAUDE="${GDRIVE_CLAUDE:-gdrive:dotfiles/claude}"
+EXCLUDE="--exclude .credentials.json --exclude *.lock"
+
+case "${1:-}" in
+  pull)
+    echo "📥 Pulling Claude sessions from GDrive..."
+    rclone copy "${GDRIVE_CLAUDE}" ~/.claude $EXCLUDE --progress
+    echo "✅ done"
+    ;;
+  push)
+    echo "📤 Pushing Claude sessions to GDrive..."
+    rclone copy ~/.claude "${GDRIVE_CLAUDE}" $EXCLUDE --progress
+    echo "✅ done"
+    ;;
+  *)
+    echo "Usage: claude-sync [pull|push]"
+    exit 2
+    ;;
+esac
+CLAUDE_SYNC
+chmod +x /usr/local/bin/claude-sync
+
+# ---- vim config ----
+echo 'set encoding=utf-8' > /root/.vimrc
 
 # ---- Auto-attach zellij on SSH login ----
 cat >> /root/.bashrc << 'ZELLIJ_BLOCK'
