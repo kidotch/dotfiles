@@ -146,7 +146,7 @@ local keybind_list = {
   { key = "y (選択中)",       desc = "選択テキストをコピー" },
   { key = "Ctrl+Shift+U/D",   desc = "コピーモード PageUp/Down" },
   { key = "Ctrl+Shift+Space", desc = "QuickSelect (単語コピー)" },
-  { key = "F10",               desc = "テーマ切替 (light/dark)" },
+  { key = "Ctrl+Shift+A",      desc = "テーマ切替 (light/dark)" },
   { key = "PageUp/Down",      desc = "スクロール (25%)" },
   { key = "Home/End",         desc = "先頭/末尾へスクロール" },
   { key = "F11",              desc = "フルスクリーン" },
@@ -467,7 +467,8 @@ config.keys = {
   },
   -- テーマ切替（light ↔ dark）
   {
-    key = "F10",
+    key = "a",
+    mods = "CTRL|SHIFT",
     action = wezterm.action_callback(function(window, pane)
       if wezterm.GLOBAL.color_mode == "light" then
         wezterm.GLOBAL.color_mode = "dark"
@@ -594,8 +595,18 @@ if not wezterm.GLOBAL.color_mode then
   end
 end
 
+-- OneHalfLight の ansi Blue を暗めに調整したカスタムスキーム
+local builtin = wezterm.color.get_builtin_schemes()
+local light_custom = builtin["OneHalfLight"]
+light_custom.ansi[5] = "#0056b3"  -- ansi[4] DarkBlue: #0184bc → 暗めの青（Lua 1-indexed）
+light_custom.brights[3] = "#1a6b1a" -- brights[2] Green: #98c379 → 濃い緑（テーブルヘッダー等）
+
+config.color_schemes = {
+  ["OneHalfLight Custom"] = light_custom,
+}
+
 local color_schemes = {
-  light = "OneHalfLight",
+  light = "OneHalfLight Custom",
   dark  = "Solarized Dark Higher Contrast",
 }
 

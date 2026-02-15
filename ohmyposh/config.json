@@ -95,7 +95,7 @@
           "type": "text"
         },
         {
-          "foreground": "#e0f8ff",
+          "foreground": "transparent",
           "foreground_templates": [
             "{{ if gt .Code 0 }}#ef5350{{ end }}"
           ],

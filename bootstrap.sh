@@ -28,7 +28,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y --no-install-recommends \
   ca-certificates curl git build-essential unzip tmux \
-  gnupg dirmngr xz-utils rclone
+  gnupg dirmngr xz-utils rclone vim
 
 update-ca-certificates || true
 
@@ -62,6 +62,21 @@ if [ -z "${zellij_bin:-}" ]; then
   exit 1
 fi
 install -m 0755 "$zellij_bin" /usr/local/bin/zellij
+
+# ---- glow (Markdown renderer) ----
+GLOW_VERSION="${GLOW_VERSION:-2.0.0}"
+curl -fL \
+  "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_Linux_x86_64.tar.gz" \
+  -o glow.tar.gz
+
+tar -xzf glow.tar.gz
+# archive layout can include a top-level directory; locate binary defensively
+glow_bin="$(find . -maxdepth 3 -type f -name glow | head -n 1)"
+if [ -z "${glow_bin:-}" ]; then
+  echo "❌ glow binary not found in archive" >&2
+  exit 1
+fi
+install -m 0755 "$glow_bin" /usr/local/bin/glow
 
 # ---- Claude Code ----
 # ロックで死んだら一度掃除して再実行（よくある）
@@ -101,5 +116,6 @@ rm -f /root/.bootstrap_running
 
 command -v claude || true
 command -v rclone || true
+command -v glow || true
 
 echo "✅ BOOTSTRAP DONE"
