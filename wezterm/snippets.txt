@@ -27,3 +27,7 @@ git clone https://github.com/26hzhang/VSLNet.git
 ---
 export RCLONE_CONFIG_PASS=''
 ---
+vastai create instance <ID> --image vastai/base-image:@vastai-automatic-tag --disk 256 --ssh --direct --onstart-cmd 'bash -c "curl -fsSL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash"'
+---
+printf '%s\n' \"export PS1='\\[\\e[1;32m\\]\\u@\\h:\\[\\e[1;36m\\]\\w\\[\\e[0m\\]\\$ '\" >> ~/.bashrc\nsource ~/.bashrc\n
+---

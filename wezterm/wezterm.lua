@@ -39,6 +39,17 @@ config.enable_kitty_keyboard = false
 config.status_update_interval = 1000
 config.term = "xterm-256color"
 config.default_prog = { "pwsh.exe" }
+config.hide_mouse_cursor_when_typing = true
+config.selection_word_boundary = " \t\n{}[]()\"'`<>;:,.|&=/"
+
+config.quick_select_patterns = {
+  -- クオート内の文字列
+  "\"[^\"]+\"",
+  "'[^']+'",
+  "`[^`]+`",
+  -- プログラミング的な単語（英数字、ハイフン、アンダースコア、ドット、スラッシュ、コロン）
+  "[\\w./:~@#-]+",
+}
 
 ----------------------------------------------------
 -- Font / Input
@@ -92,6 +103,8 @@ end
 local C = {
   cmd   = "\x1b[38;2;86;182;194m",   -- cyan (コマンド)
   add   = "\x1b[38;2;152;195;121m",   -- green (追加ボタン)
+  key   = "\x1b[38;2;229;192;123m",   -- yellow (キーバインド)
+  desc  = "\x1b[38;2;171;178;191m",   -- gray (説明)
   reset = "\x1b[0m",
 }
 
@@ -104,6 +117,67 @@ local function build_snippet_choices()
   end
 
   table.insert(choices, { label = C.add .. "+ Add new snippet" .. C.reset, id = "__add__" })
+  return choices
+end
+
+----------------------------------------------------
+-- Keybind Help
+----------------------------------------------------
+local keybind_list = {
+  -- カスタム
+  { key = "--- カスタム ---",  desc = "" },
+  { key = "Ctrl+Shift+Enter", desc = "ペイン分割 (自動方向)" },
+  { key = "Ctrl+Shift+Q",     desc = "ペインを閉じる" },
+  { key = "Ctrl+Shift+B",     desc = "透過モード切替" },
+  { key = "Ctrl+Shift+Alt+↑", desc = "透明度を上げる" },
+  { key = "Ctrl+Shift+Alt+↓", desc = "透明度を下げる" },
+  { key = "Ctrl+Shift+R",     desc = "ペインをローテーション" },
+  { key = "Ctrl+Shift+S",     desc = "ペインをスワップ" },
+  { key = "Ctrl+Shift+N",     desc = "次のペインへ移動" },
+  { key = "Ctrl+Shift+P",     desc = "前のペインへ移動" },
+  { key = "Ctrl+Shift+Arrow", desc = "方向指定でペイン移動" },
+  { key = "Ctrl+V",           desc = "貼り付け" },
+  { key = "Ctrl+Shift+C",     desc = "コピーモード (行選択)" },
+  { key = "Ctrl+Shift+0",     desc = "フォントサイズリセット" },
+  { key = "Ctrl+Tab",         desc = "次のタブへ" },
+  { key = "Ctrl+Shift+Tab",   desc = "前のタブへ" },
+  { key = "Ctrl+:",           desc = "スニペット一覧" },
+  { key = "Ctrl+Shift+K",     desc = "キーバインド一覧 (このヘルプ)" },
+  { key = "y (選択中)",       desc = "選択テキストをコピー" },
+  { key = "Ctrl+Shift+U/D",   desc = "コピーモード PageUp/Down" },
+  { key = "Ctrl+Shift+Space", desc = "QuickSelect (単語コピー)" },
+  { key = "F10",               desc = "テーマ切替 (light/dark)" },
+  { key = "PageUp/Down",      desc = "スクロール (25%)" },
+  { key = "Home/End",         desc = "先頭/末尾へスクロール" },
+  { key = "F11",              desc = "フルスクリーン" },
+  -- デフォルト
+  { key = "--- デフォルト ---", desc = "" },
+  { key = "Ctrl+Shift+W",     desc = "タブを閉じる" },
+  { key = "Ctrl+Shift+1~9",   desc = "タブを番号で切替" },
+
+  { key = "Ctrl+Shift+F",     desc = "検索" },
+  { key = "Ctrl+Shift+X",     desc = "コピーモード" },
+  { key = "Ctrl+Shift+Space", desc = "クイック選択モード" },
+  { key = "Ctrl+Shift+U",     desc = "Unicode 文字選択" },
+  { key = "Ctrl+Shift+L",     desc = "デバッグオーバーレイ" },
+  { key = "Ctrl+=",           desc = "フォントサイズ拡大" },
+  { key = "Ctrl+-",           desc = "フォントサイズ縮小" },
+}
+
+local function build_keybind_choices()
+  local choices = {}
+  for _, kb in ipairs(keybind_list) do
+    if kb.desc == "" then
+      -- セクション見出し
+      local label = C.add .. kb.key .. C.reset
+      table.insert(choices, { label = label, id = "__header__" })
+    else
+      local pad_len = math.max(1, 22 - #kb.key)
+      local pad = string.rep(" ", pad_len)
+      local label = C.key .. kb.key .. pad .. C.desc .. kb.desc .. C.reset
+      table.insert(choices, { label = label, id = kb.key })
+    end
+  end
   return choices
 end
 
@@ -122,14 +196,43 @@ config.keys = {
     action = wezterm.action.EmitEvent("toggle-transparency-mode"),
   },
   {
-    key = "]",
-    mods = "CTRL",
+    key = "DownArrow",
+    mods = "CTRL|SHIFT|ALT",
     action = wezterm.action.EmitEvent("increase-opacity"),
   },
   {
-    key = "[",
-    mods = "CTRL",
+    key = "UpArrow",
+    mods = "CTRL|SHIFT|ALT",
     action = wezterm.action.EmitEvent("decrease-opacity"),
+  },
+  -- ペイン分割（横↔縦を自動交互）
+  {
+    key = "Enter",
+    mods = "CTRL|SHIFT",
+    action = wezterm.action_callback(function(window, pane)
+      local tab = pane:tab()
+      local panes = tab:panes_with_info()
+      -- このペインの情報を取得
+      local my_info
+      for _, p in ipairs(panes) do
+        if p.pane:pane_id() == pane:pane_id() then
+          my_info = p
+          break
+        end
+      end
+      -- ペインが横長なら横分割(Bottom)、縦長なら縦分割(Right)
+      if my_info then
+        local w = my_info.pixel_width
+        local h = my_info.pixel_height
+        if w >= h then
+          pane:split({ direction = "Right" })
+        else
+          pane:split({ direction = "Bottom" })
+        end
+      else
+        pane:split({ direction = "Right" })
+      end
+    end),
   },
   -- ペイン入れ替え
   {
@@ -200,46 +303,16 @@ config.keys = {
   },
   -- コピーモード + 行選択開始
   {
-    key = "v",
+    key = "c",
     mods = "CTRL|SHIFT",
-    action = wezterm.action.EmitEvent("copy-mode-line-select"),
-  },
-  -- コピーモード + カーソル移動 (vim風)
-  {
-    key = "h",
-    mods = "CTRL",
-    action = wezterm.action_callback(function(window, pane)
-      window:perform_action(act.ActivateCopyMode, pane)
-      window:perform_action(act.CopyMode("MoveLeft"), pane)
-    end),
-  },
-  {
-    key = "j",
-    mods = "CTRL",
-    action = wezterm.action_callback(function(window, pane)
-      window:perform_action(act.ActivateCopyMode, pane)
-      window:perform_action(act.CopyMode("MoveDown"), pane)
-    end),
-  },
-  {
-    key = "k",
-    mods = "CTRL",
-    action = wezterm.action_callback(function(window, pane)
-      window:perform_action(act.ActivateCopyMode, pane)
-      window:perform_action(act.CopyMode("MoveUp"), pane)
-    end),
-  },
-  {
-    key = "l",
-    mods = "CTRL",
-    action = wezterm.action_callback(function(window, pane)
-      window:perform_action(act.ActivateCopyMode, pane)
-      window:perform_action(act.CopyMode("MoveRight"), pane)
-    end),
+    action = act.Multiple({
+      act.EmitEvent("ime-off"),
+      act.EmitEvent("copy-mode-line-select"),
+    }),
   },
   {
     key = "0",
-    mods = "CTRL",
+    mods = "CTRL|SHIFT",
     action = wezterm.action.ResetFontSize,
   },
   -- タブ切り替え（IME オフ付き）
@@ -291,7 +364,7 @@ config.keys = {
     mods = "CTRL|SHIFT",
     action = wezterm.action.MoveTabRelative(1),
   },]]
-  -- コマンドパレット
+  -- スニペット
   {
     key = ":",
     mods = "CTRL",
@@ -317,6 +390,48 @@ config.keys = {
       }), pane)
     end),
   },
+  -- コピーモード（デフォルト上書き、IME OFF付き）
+  {
+    key = "x",
+    mods = "CTRL|SHIFT",
+    action = act.Multiple({
+      act.EmitEvent("ime-off"),
+      act.ActivateCopyMode,
+    }),
+  },
+  -- QuickSelect（画面上の単語をヒントキーでコピー）
+  {
+    key = "g",
+    mods = "CTRL|SHIFT",
+    action = act.QuickSelectArgs({
+      scope_lines = 0,
+      action = wezterm.action_callback(function(window, pane)
+        local text = window:get_selection_text_for_pane(pane)
+        if text and text ~= "" then
+          window:copy_to_clipboard(text, "Clipboard")
+        end
+      end),
+    }),
+  },
+  -- フルスクリーン
+  {
+    key = "F11",
+    action = act.ToggleFullScreen,
+  },
+  -- キーバインドヘルプ
+  {
+    key = "k",
+    mods = "CTRL|SHIFT",
+    action = wezterm.action_callback(function(window, pane)
+      window:perform_action(act.InputSelector({
+        title = "Keybindings",
+        choices = build_keybind_choices(),
+        action = wezterm.action_callback(function(window, pane, id, label)
+          -- 選択しても何もしない（閲覧用）
+        end),
+      }), pane)
+    end),
+  },
   -- マウス選択中に y でコピー（選択なしなら通常入力）
   {
     key = "y",
@@ -331,7 +446,39 @@ config.keys = {
       end
     end),
   },
-  -- スクロール
+  -- スクロール（コピーモード、半ページ）
+  {
+    key = "u",
+    mods = "CTRL|SHIFT",
+    action = act.Multiple({
+      act.EmitEvent("ime-off"),
+      act.ActivateCopyMode,
+      act.CopyMode("PageUp"),
+    }),
+  },
+  {
+    key = "d",
+    mods = "CTRL|SHIFT",
+    action = act.Multiple({
+      act.EmitEvent("ime-off"),
+      act.ActivateCopyMode,
+      act.CopyMode("PageDown"),
+    }),
+  },
+  -- テーマ切替（light ↔ dark）
+  {
+    key = "F10",
+    action = wezterm.action_callback(function(window, pane)
+      if wezterm.GLOBAL.color_mode == "light" then
+        wezterm.GLOBAL.color_mode = "dark"
+      else
+        wezterm.GLOBAL.color_mode = "light"
+      end
+      write_theme_file(wezterm.GLOBAL.color_mode)
+      apply_transparency_mode(window)
+    end),
+  },
+  -- スクロール（通常）
   {
     key = "PageUp",
     action = act.ScrollByPage(-0.25),
@@ -342,12 +489,10 @@ config.keys = {
   },
   {
     key = "Home",
-    mods = "SHIFT",
     action = act.ScrollToTop,
   },
   {
     key = "End",
-    mods = "SHIFT",
     action = act.ScrollToBottom,
   },
 }
@@ -360,9 +505,7 @@ config.inactive_pane_hsb = {
   saturation = 1.0,
   brightness = 0.4,
 }
-config.color_scheme = 'Solarized Dark Higher Contrast'
--- config.color_scheme = 'Kanagawa Dragon (Gogh)'
--- config.color_scheme = 'AdventureTime'
+-- color_scheme is set dynamically by GLOBAL.color_mode (see Color Mode section above)
 ----------------------------------------------------
 -- Tab
 ----------------------------------------------------
@@ -381,6 +524,10 @@ config.colors = {
     inactive_tab_edge = "none",
   },
   compose_cursor = "#e06c75",  -- IME変換中のカーソル色
+  quick_select_label_bg = { Color = "#e06c75" },
+  quick_select_label_fg = { Color = "#ffffff" },
+  quick_select_match_bg = { Color = "#3b4252" },
+  quick_select_match_fg = { Color = "#88c0d0" },
 }
 
 wezterm.on("format-tab-title", function(tab, tabs, panes, config, hover, max_width)
@@ -414,16 +561,66 @@ end)
 ----------------------------------------------------
 wezterm.GLOBAL.transparency_mode = wezterm.GLOBAL.transparency_mode or 0
 
+----------------------------------------------------
+-- Color Mode (light / dark)
+----------------------------------------------------
+local theme_file = userprofile .. "\\.wezterm-theme"
+
+local function read_theme_file()
+  local f = io.open(theme_file, "r")
+  if not f then return nil end
+  local content = f:read("*l")
+  f:close()
+  if content then content = content:gsub("%s+", "") end
+  return content
+end
+
+local function write_theme_file(mode)
+  local f = io.open(theme_file, "w")
+  if f then
+    f:write(mode .. "\n")
+    f:close()
+  end
+end
+
+-- 初期化: ファイルがあればそこから復元、なければ現在の color_scheme から判定
+if not wezterm.GLOBAL.color_mode then
+  local saved = read_theme_file()
+  if saved == "light" or saved == "dark" then
+    wezterm.GLOBAL.color_mode = saved
+  else
+    wezterm.GLOBAL.color_mode = "light"
+    write_theme_file("light")
+  end
+end
+
+local color_schemes = {
+  light = "OneHalfLight",
+  dark  = "Solarized Dark Higher Contrast",
+}
+
+config.color_scheme = color_schemes[wezterm.GLOBAL.color_mode]
+
+local function is_light_theme()
+  return wezterm.GLOBAL.color_mode == "light"
+end
+
 local function apply_transparency_mode(window)
   local overrides = window:get_config_overrides() or {}
   local mode = wezterm.GLOBAL.transparency_mode
   local is_opaque = mode == 2
+  local light = is_light_theme()
 
+  -- ライト/ダークに応じた透過時の色
+  local fg = light and "#1a1b26" or "#ffffff"
+  local bg_gradient = light and "#e1e2e7" or "#000000"
+
+  overrides.color_scheme = color_schemes[wezterm.GLOBAL.color_mode]
   overrides.win32_system_backdrop = mode == 0 and "Acrylic" or nil
   overrides.window_background_opacity = is_opaque and 1.0 or (wezterm.GLOBAL.opacity or 0.6)
 
   if is_opaque then
-    local scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
+    local scheme = wezterm.color.get_builtin_schemes()[color_schemes[wezterm.GLOBAL.color_mode]]
     overrides.window_background_gradient = { colors = { scheme.background } }
     overrides.colors = {
       tab_bar = {
@@ -436,15 +633,15 @@ local function apply_transparency_mode(window)
       },
     }
   else
-    overrides.window_background_gradient = { colors = { "#000000" } }
+    overrides.window_background_gradient = { colors = { bg_gradient } }
     overrides.colors = {
-      foreground = "#ffffff",
+      foreground = fg,
       tab_bar = {
         background = "transparent",
         inactive_tab_edge = "none",
         active_tab = {
           bg_color = "transparent",
-          fg_color = "#ffffff",
+          fg_color = fg,
         },
       },
     }
@@ -536,6 +733,17 @@ end)
 -- Copy Mode キーテーブル拡張
 ----------------------------------------------------
 local copy_mode = wezterm.gui.default_key_tables().copy_mode
+
+-- デフォルトの w, y, u, d をカスタムで上書きするため除去
+local override_keys = { y = true, u = true, d = true }
+local filtered_copy_mode = {}
+for _, k in ipairs(copy_mode) do
+  if not (k.mods == "NONE" and override_keys[k.key]) then
+    table.insert(filtered_copy_mode, k)
+  end
+end
+copy_mode = filtered_copy_mode
+
 local copy_mode_extra = {
   { key = "h", mods = "CTRL", action = act.CopyMode("MoveLeft") },
   { key = "j", mods = "CTRL", action = act.CopyMode("MoveDown") },
@@ -543,17 +751,37 @@ local copy_mode_extra = {
   { key = "l", mods = "CTRL", action = act.CopyMode("MoveRight") },
   -- 矩形選択
   { key = "v", mods = "CTRL", action = act.CopyMode({ SetSelectionMode = "Block" }) },
+  -- コピーしてコピーモード終了
+  { key = "y", mods = "NONE", action = act.Multiple({
+    act.CopyTo("Clipboard"),
+    act.CopyMode("Close"),
+  })},
   -- ペースト（コピーモード終了 → 貼り付け）
   { key = "p", mods = "NONE", action = act.Multiple({
     act.CopyMode("Close"),
     act.PasteFrom("Clipboard"),
   })},
+  -- スクロール（コピーモード中、半ページ）
+  { key = "u", mods = "CTRL|SHIFT", action = act.CopyMode("PageUp") },
+  { key = "d", mods = "CTRL|SHIFT", action = act.CopyMode("PageDown") },
+  { key = "u", mods = "NONE", action = act.CopyMode("PageUp") },
+  { key = "d", mods = "NONE", action = act.CopyMode("PageDown") },
 }
 for _, k in ipairs(copy_mode_extra) do
   table.insert(copy_mode, k)
 end
+local search_mode = {
+  { key = "Escape", mods = "NONE", action = wezterm.action_callback(function(window, pane)
+    window:perform_action(act.CopyMode("ClearPattern"), pane)
+    window:perform_action(act.CopyMode("Close"), pane)
+  end)},
+  { key = "Enter", mods = "NONE", action = act.CopyMode("AcceptPattern") },
+  { key = "Backspace", mods = "NONE", action = act.CopyMode("ClearPattern") },
+}
+
 config.key_tables = {
   copy_mode = copy_mode,
+  search_mode = search_mode,
 }
 
 return config

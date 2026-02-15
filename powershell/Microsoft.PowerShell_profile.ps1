@@ -263,49 +263,73 @@ function vai-destroy { param([string]$InstanceId) _Invoke-VaiInstanceAction $Ins
 # PSReadLine の入力色をテーマに応じて切り替え
 Import-Module PSReadLine -ErrorAction SilentlyContinue
 
-$_wtSettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
+$wtSettingsPath = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json"
 
 function _Set-PSReadLineLight {
     Set-PSReadLineOption -Colors @{
-        Default   = 'Black'
-        Command   = 'DarkBlue'
-        Parameter = 'DarkCyan'
-        String    = 'DarkGreen'
-        Operator  = 'DarkMagenta'
-        Number    = 'DarkYellow'
+        Default          = 'Black'
+        Command          = 'DarkBlue'
+        Parameter        = 'DarkCyan'
+        String           = 'DarkGreen'
+        Operator         = 'DarkMagenta'
+        Number           = 'DarkYellow'
+        InlinePrediction = '#999999'
     }
 }
 
 function _Set-PSReadLineDark {
     Set-PSReadLineOption -Colors @{
-        Default   = 'White'
-        Command   = 'Cyan'
-        Parameter = 'DarkCyan'
-        String    = 'Green'
-        Operator  = 'Magenta'
-        Number    = 'Yellow'
+        Default          = 'White'
+        Command          = 'Cyan'
+        Parameter        = 'DarkCyan'
+        String           = 'Green'
+        Operator         = 'Magenta'
+        Number           = 'Yellow'
+        InlinePrediction = '#666666'
     }
 }
 
 function Set-TerminalDark {
-    $json = Get-Content $_wtSettingsPath -Raw | ConvertFrom-Json
+    $json = Get-Content $wtSettingsPath -Raw | ConvertFrom-Json
     $json.profiles.defaults.colorScheme = 'Dimidium'
     $json.theme = 'dark'
-    $json | ConvertTo-Json -Depth 10 | Set-Content $_wtSettingsPath
+    $json | ConvertTo-Json -Depth 10 | Set-Content $wtSettingsPath
     _Set-PSReadLineDark
 }
 
 function Set-TerminalLight {
-    $json = Get-Content $_wtSettingsPath -Raw | ConvertFrom-Json
+    $json = Get-Content $wtSettingsPath -Raw | ConvertFrom-Json
     $json.profiles.defaults.colorScheme = 'One Half Light (modified)'
     $json.theme = 'light'
-    $json | ConvertTo-Json -Depth 10 | Set-Content $_wtSettingsPath
+    $json | ConvertTo-Json -Depth 10 | Set-Content $wtSettingsPath
     _Set-PSReadLineLight
 }
 
-# 起動時: 現在のスキームに合わせてPSReadLineの色を設定
-if (Test-Path $_wtSettingsPath) {
-    $json = Get-Content $_wtSettingsPath -Raw | ConvertFrom-Json
+function Toggle-Acrylic {
+    $json = Get-Content $wtSettingsPath -Raw | ConvertFrom-Json
+    $current = $json.profiles.defaults.useAcrylic
+    $json.profiles.defaults.useAcrylic = -not $current
+    $json | ConvertTo-Json -Depth 10 | Set-Content $wtSettingsPath
+    $state = if (-not $current) { 'ON' } else { 'OFF' }
+    Write-Host "useAcrylic: $state"
+}
+
+# WezTerm テーマファイルを読んで PSReadLine の色を同期する
+$weztermThemePath = "$env:USERPROFILE\.wezterm-theme"
+
+function Sync-WezTermTheme {
+    if (Test-Path $weztermThemePath) {
+        $theme = (Get-Content $weztermThemePath -Raw).Trim()
+        if ($theme -eq 'light') { _Set-PSReadLineLight }
+        else { _Set-PSReadLineDark }
+    }
+}
+
+# 起動時: ~/.wezterm-theme があればそれを優先、なければ WT settings.json チェック
+if (Test-Path $weztermThemePath) {
+    Sync-WezTermTheme
+} elseif (Test-Path $wtSettingsPath) {
+    $json = Get-Content $wtSettingsPath -Raw | ConvertFrom-Json
     if ($json.profiles.defaults.colorScheme -eq 'One Half Light (modified)') {
         _Set-PSReadLineLight
     } else {
