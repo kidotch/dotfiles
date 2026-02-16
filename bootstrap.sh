@@ -103,8 +103,10 @@ npm install -g @openai/codex
 if [[ -n "${RCLONE_CONFIG_B64:-}" ]]; then
   echo "$RCLONE_CONFIG_B64" | base64 -d > /dev/shm/rclone.conf
   chmod 600 /dev/shm/rclone.conf
+  unset RCLONE_CONFIG_B64
   echo "✅ rclone config written to /dev/shm/rclone.conf"
 fi
+export RCLONE_CONFIG=/dev/shm/rclone.conf
 grep -q 'export RCLONE_CONFIG=' /root/.bashrc 2>/dev/null || \
   echo 'export RCLONE_CONFIG=/dev/shm/rclone.conf' >> /root/.bashrc
 
