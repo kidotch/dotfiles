@@ -33,3 +33,5 @@ printf '%s\n' \"export PS1='\\[\\e[1;32m\\]\\u@\\h:\\[\\e[1;36m\\]\\w\\[\\e[0m\\
 ---
 vastai create instance <ID> --image c2140/unitime:latest --disk 256 --ssh --direct --env "RCLONE_CONFIG_B64=W2dkcml2ZV0NCnR5cGUgPSBkcml2ZQ0Kc2NvcGUgPSBkcml2ZQ0KdG9rZW4gPSB7ImFjY2Vzc190b2tlbiI6InlhMjkuYTBBVGtvQ2M2TkE3dGZCdVp4TDBfM2xtd0poZ2hoTWR3VlRBTlJ0cWxoUTNaZE5sRzRleVJzVnByQmZ4OHBJTzR0MURLaEpMb0hSMHhSZktjSjRvSW5TSmxRakRaQ3RMLVlQQ1JlVE5rNVMyYjd1dWJHS0NPZERpVHk3ZTA3cWVZc3dPRDByc3B2OW53ckFTS3JtZ1dZR20wV3lKWlhjc0ZlcWN1Y05Sb3puQ3BDRUNicDhRaU54aGhJNDZnSlRTRG9ndTA4bEk0YUNnWUtBWWdTQVJRU0ZRSEdYMk1pYlp6WDUyNmllNGRjMlA4OWZPM21qdzAyMDYiLCJ0b2tlbl90eXBlIjoiQmVhcmVyIiwicmVmcmVzaF90b2tlbiI6IjEvLzBlMnFXbTNpcFhna1RDZ1lJQVJBQUdBNFNOd0YtTDlJcl9XSnhaSW4yMHZ0Y2FveXozQW1KSTVFWmx6TjRhNFFjdmxTNHZJbnV2bFk4YlF6bDZYcEIySFlfUVo4LVhKbldJbnMiLCJleHBpcnkiOiIyMDI2LTAyLTE2VDA3OjA1OjUzLjcwNTgyNDQrMDk6MDAiLCJleHBpcmVzX2luIjozNTk5fQ0KdGVhbV9kcml2ZSA9IA0KDQo=" --onstart-cmd 'bash -c "curl -fsSL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash"'
 ---
+echo "B64=${RCLONE_CONFIG_B64:+SET}"
+---

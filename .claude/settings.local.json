@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pwsh -Command:*)"
+      "Bash(pwsh -Command:*)",
+      "WebSearch"
     ]
   }
 }
