@@ -35,3 +35,5 @@ vastai create instance <ID> --image c2140/unitime:latest --disk 256 --ssh --dire
 ---
 echo "B64=${RCLONE_CONFIG_B64:+SET}"
 ---
+vastai create instance 30339034 --image c2140/unitime:latest --disk 256 --ssh --direct --env "-e RCLONE_CONFIG_B64=$([Convert]::ToBase64String([IO.File]::ReadAllBytes('C:\Users\ahcha\AppData\Roaming\rclone\rclone.conf')))" --onstart-cmd 'bash -c "curl -fsSL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash"'
+---

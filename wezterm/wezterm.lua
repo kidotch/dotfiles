@@ -54,6 +54,7 @@ config.quick_select_patterns = {
 ----------------------------------------------------
 -- Font / Input
 ----------------------------------------------------
+config.font = wezterm.font("UDEV Gothic 35NF")
 config.font_size = 14
 config.use_ime = true
 config.adjust_window_size_when_changing_font_size = false
@@ -518,6 +519,7 @@ config.window_frame = {
   font_size = 12,
 }
 -- window_background_gradient is managed dynamically in apply_transparency_mode()
+config.use_fancy_tab_bar = true
 config.show_new_tab_button_in_tab_bar = false
 config.show_close_tab_button_in_tabs = false
 config.colors = {
