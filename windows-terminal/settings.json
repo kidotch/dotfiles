@@ -187,7 +187,16 @@
                 "input": "vastai create instance <OFFER_ID> --image vastai/base-image:@vastai-automatic-tag --env '-p 1111:1111 -p 6006:6006 -p 8080:8080 -p 8384:8384 -p 72299:72299 -e OPEN_BUTTON_PORT=1111 -e OPEN_BUTTON_TOKEN=1 -e JUPYTER_DIR=/ -e DATA_DIRECTORY=/workspace/ -e PORTAL_CONFIG=\"localhost:1111:11111:/:Instance Portal|localhost:8080:18080:/:Jupyter|localhost:8080:8080:/terminals/1:Jupyter Terminal|localhost:8384:18384:/:Syncthing|localhost:6006:16006:/:Tensorboard\"' --onstart-cmd 'entrypoint.sh' --disk 32 --jupyter --ssh --direct"
             },
             "id": "User.sendInput.1CF0D5CE",
-            "name": "vastai template-command"
+            "name": "vastai templatecommand"
+        },
+        {
+            "command":
+            {
+                "action": "sendInput",
+                "input": "vastai create instance <id> --image vastai/base-image:@vastai-automatic-tag --disk 256 --ssh --direct --env \"-e RCLONE_CONFIG_B64=$([Convert]::ToBase64String([IO.File]::ReadAllBytes('C:\\Users\\ahcha\\AppData\\Roaming\\rclone\\rclone.conf')))\" --onstart-cmd 'bash -c \"curl -fsSL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash\"'"
+            },
+            "id": "User.sendInput.VAI256001",
+            "name": "vastai create 256GB + rclone + dotfiles"
         },
         {
             "command": 
@@ -302,7 +311,7 @@
             "font": 
             {
                 "face": "UDEV Gothic 35NF",
-                "size": 14
+                "size": 18
             },
             "historySize": 20000,
             "opacity": 80,
