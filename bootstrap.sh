@@ -4,8 +4,8 @@ set -euo pipefail
 # ==============================================================================
 # vast.ai bootstrap with real-time progress tracking
 #
-# /root/.bootstrap_step   — current step info (read by SSH wait gate)
-# /root/.bootstrap.log    — detailed output log
+# /root/.bootstrap_step    — current step info (read by SSH wait gate)
+# /root/.bootstrap.log     — detailed output log
 # /root/.bootstrap_running — gate file (removed on completion)
 # ==============================================================================
 
@@ -25,6 +25,10 @@ step() {
 
 log() { echo "$*" | tee -a "$LOG_FILE"; }
 
+# ensure .bootstrap_running is always removed on exit
+cleanup() { rm -f /root/.bootstrap_running; }
+trap cleanup EXIT
+
 # ---- vast.ai: disable auto tmux, use zellij instead ----
 touch /root/.no_auto_tmux
 sed -i 's/tmux attach-session -t ssh_tmux || tmux new-session -s ssh_tmux; exit/true/g' /root/.bashrc 2>/dev/null || true
@@ -36,8 +40,8 @@ cat >> /root/.bashrc << 'WAIT_BLOCK'
 # wait for bootstrap to finish — show live progress
 if [ -f /root/.bootstrap_running ]; then
   echo ""
-  echo "⏳ Bootstrap is running..."
-  echo "   (detail: tail -f /root/.bootstrap.log)"
+  echo "  Bootstrap is running..."
+  echo "  (detail: tail -f /root/.bootstrap.log)"
   echo ""
   while [ -f /root/.bootstrap_running ]; do
     if [ -f /root/.bootstrap_step ]; then
@@ -47,16 +51,22 @@ if [ -f /root/.bootstrap_running ]; then
       total=${rest%% *}
       name=${rest#* }
       if [ -n "$cur" ] && [ -n "$total" ] && [ "$total" -gt 0 ] 2>/dev/null; then
+        pct=$(( cur * 100 / total ))
         filled=$(( cur * 20 / total ))
-        bar=$(printf '%*s' "$filled" '' | tr ' ' '█')
-        bar_empty=$(printf '%*s' "$(( 20 - filled ))" '' | tr ' ' '░')
-        printf "\r  [%s%s] %s/%s %s   " "$bar" "$bar_empty" "$cur" "$total" "$name"
+        empty=$(( 20 - filled ))
+        bar=$(printf '%*s' "$filled" '' | tr ' ' '#')
+        bar_empty=$(printf '%*s' "$empty" '' | tr ' ' '-')
+        printf "\r  [%s%s] %3d%% (%d/%d) %s   " "$bar" "$bar_empty" "$pct" "$cur" "$total" "$name"
       fi
     fi
     sleep 1
   done
-  printf "\r%60s\r" ""
-  echo "✅ Bootstrap complete!"
+  printf "\r%70s\r" ""
+  if [ -f /root/.bootstrap_step ]; then
+    echo "  Bootstrap complete! ($(cat /root/.bootstrap_step))"
+  else
+    echo "  Bootstrap finished."
+  fi
   echo ""
   if [[ -x /usr/local/bin/zellij ]] && [[ -z "${ZELLIJ:-}" ]] && [[ -n "${SSH_CONNECTION:-}" ]]; then
     exec /usr/local/bin/zellij attach -c ssh_zellij
@@ -65,7 +75,7 @@ fi
 
 # show bootstrap result inside zellij
 if [ -n "${ZELLIJ:-}" ] && [ -f /root/.bootstrap_step ]; then
-  echo "✅ Bootstrap done ($(cat /root/.bootstrap_step))"
+  echo "Bootstrap done ($(cat /root/.bootstrap_step))"
 fi
 WAIT_BLOCK
 
@@ -95,7 +105,6 @@ grep -q 'export PATH="/root/.npm-global/bin:$PATH"' /root/.bashrc 2>/dev/null ||
 # === 3. Zellij ================================================================
 step 3 "Zellij"
 tmpdir="$(mktemp -d)"
-trap 'rm -rf "$tmpdir"' EXIT
 cd "$tmpdir"
 
 curl -fL \
@@ -104,7 +113,7 @@ curl -fL \
 tar -xzf zellij.tar.gz
 zellij_bin="$(find . -maxdepth 2 -type f -name zellij | head -n 1)"
 if [ -z "${zellij_bin:-}" ]; then
-  log "❌ zellij binary not found in archive"
+  log "  zellij binary not found in archive"
   exit 1
 fi
 install -m 0755 "$zellij_bin" /usr/local/bin/zellij
@@ -112,29 +121,44 @@ install -m 0755 "$zellij_bin" /usr/local/bin/zellij
 # === 4. glow ==================================================================
 step 4 "glow (Markdown renderer)"
 GLOW_VERSION="${GLOW_VERSION:-2.0.0}"
-cd "$tmpdir"
 curl -fL \
   "https://github.com/charmbracelet/glow/releases/download/v${GLOW_VERSION}/glow_${GLOW_VERSION}_Linux_x86_64.tar.gz" \
   -o glow.tar.gz >> "$LOG_FILE" 2>&1
 tar -xzf glow.tar.gz
 glow_bin="$(find . -maxdepth 3 -type f -name glow | head -n 1)"
 if [ -z "${glow_bin:-}" ]; then
-  log "❌ glow binary not found in archive"
+  log "  glow binary not found in archive"
   exit 1
 fi
 install -m 0755 "$glow_bin" /usr/local/bin/glow
+
+cd /root
 rm -rf "$tmpdir"
 
 # === 5. Claude Code ===========================================================
 step 5 "Claude Code"
-set +e
-curl -fsSL https://claude.ai/install.sh 2>>"$LOG_FILE" | bash >> "$LOG_FILE" 2>&1
-status=$?
-set -e
-if [ $status -ne 0 ]; then
-  log "  ⚠️ retry..."
-  rm -f /root/.claude/*.lock 2>/dev/null || true
-  curl -fsSL https://claude.ai/install.sh 2>>"$LOG_FILE" | bash >> "$LOG_FILE" 2>&1
+claude_installed=false
+# prefer npm (no region restriction)
+if command -v npm &>/dev/null; then
+  set +e
+  npm install -g @anthropic-ai/claude-code >> "$LOG_FILE" 2>&1
+  [ $? -eq 0 ] && claude_installed=true
+  set -e
+fi
+# fallback: curl installer (check it returns a script, not HTML)
+if [ "$claude_installed" = false ]; then
+  set +e
+  installer=$(curl -fsSL https://claude.ai/install.sh 2>>"$LOG_FILE")
+  if echo "$installer" | head -1 | grep -q '^#!'; then
+    echo "$installer" | bash >> "$LOG_FILE" 2>&1
+    [ $? -eq 0 ] && claude_installed=true
+  fi
+  set -e
+fi
+if [ "$claude_installed" = true ]; then
+  log "  ok"
+else
+  log "  skipped (npm unavailable & claude.ai blocked in this region)"
 fi
 grep -q 'export PATH="$HOME/.local/bin:$PATH"' /root/.bashrc 2>/dev/null || \
   echo 'export PATH="$HOME/.local/bin:$PATH"' >> /root/.bashrc
@@ -142,7 +166,11 @@ export PATH="$HOME/.local/bin:$PATH"
 
 # === 6. Codex CLI =============================================================
 step 6 "Codex CLI"
-npm install -g @openai/codex >> "$LOG_FILE" 2>&1
+if command -v npm &>/dev/null; then
+  npm install -g @openai/codex >> "$LOG_FILE" 2>&1
+else
+  log "  skipped (npm unavailable)"
+fi
 
 # === 7. rclone config =========================================================
 step 7 "rclone config"
@@ -150,7 +178,7 @@ if [[ -n "${RCLONE_CONFIG_B64:-}" ]]; then
   echo "$RCLONE_CONFIG_B64" | base64 -d > /dev/shm/rclone.conf
   chmod 600 /dev/shm/rclone.conf
   unset RCLONE_CONFIG_B64
-  log "  rclone config → /dev/shm/rclone.conf"
+  log "  rclone config -> /dev/shm/rclone.conf"
 fi
 export RCLONE_CONFIG=/dev/shm/rclone.conf
 grep -q 'export RCLONE_CONFIG=' /root/.bashrc 2>/dev/null || \
@@ -164,8 +192,8 @@ if [[ -f /dev/shm/rclone.conf ]]; then
   rclone copy "${GDRIVE_CLAUDE}" /root/.claude \
     --exclude .credentials.json --exclude "*.lock" \
     >> "$LOG_FILE" 2>&1 \
-    && log "  ✓ sessions restored" \
-    || log "  ⚠️ sync failed (first run?)"
+    && log "  sessions restored" \
+    || log "  sync failed (first run?)"
 else
   log "  skipped (no rclone config)"
 fi
@@ -180,14 +208,14 @@ EXCLUDE="--exclude .credentials.json --exclude *.lock"
 
 case "${1:-}" in
   pull)
-    echo "📥 Pulling Claude sessions from GDrive..."
+    echo "Pulling Claude sessions from GDrive..."
     rclone copy "${GDRIVE_CLAUDE}" ~/.claude $EXCLUDE --progress
-    echo "✅ done"
+    echo "done"
     ;;
   push)
-    echo "📤 Pushing Claude sessions to GDrive..."
+    echo "Pushing Claude sessions to GDrive..."
     rclone copy ~/.claude "${GDRIVE_CLAUDE}" $EXCLUDE --progress
-    echo "✅ done"
+    echo "done"
     ;;
   *)
     echo "Usage: claude-sync [pull|push]"
@@ -209,7 +237,6 @@ if command -v zellij &>/dev/null && [[ -z "$ZELLIJ" ]] && [[ -n "$SSH_CONNECTION
 fi
 ZELLIJ_BLOCK
 
-# ---- done --------------------------------------------------------------------
-rm -f /root/.bootstrap_running
+# ---- done (trap removes .bootstrap_running) ----------------------------------
 log ""
-log "✅ BOOTSTRAP DONE"
+log "BOOTSTRAP DONE"
