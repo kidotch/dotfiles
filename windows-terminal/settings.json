@@ -1,0 +1,434 @@
+{
+    "$help": "https://aka.ms/terminal-documentation",
+    "$schema": "https://aka.ms/terminal-profiles-schema",
+    "actions": 
+    [
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "Set-TerminalDark\r"
+            },
+            "id": "User.setDark"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "Set-TerminalLight\r"
+            },
+            "id": "User.setLight"
+        },
+        {
+            "command": 
+            {
+                "action": "adjustOpacity",
+                "opacity": 5,
+                "relative": true
+            },
+            "id": "User.opacityUp"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "tmux attach -t work\n"
+            },
+            "id": "User.sendInput.9CBCC12D",
+            "name": "tmux attach"
+        },
+        {
+            "command": 
+            {
+                "action": "adjustOpacity",
+                "opacity": -5,
+                "relative": true
+            },
+            "id": "User.opacityDown"
+        },
+        {
+            "command": 
+            {
+                "action": "splitPane",
+                "type": "snippets"
+            },
+            "id": "User.splitPane.A2B727CC"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "rclone config create gdrive drive token='JSON_TOKEN'"
+            },
+            "id": "User.sendInput.RCLONE04",
+            "name": "rclone config create gdrive (token)"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "tmux new -s work\n"
+            },
+            "id": "User.sendInput.7F71203C",
+            "name": "tmux new"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "rclone copy datasets gdrive:datasets -P\n"
+            },
+            "id": "User.sendInput.5135683A",
+            "name": "rclone upload"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "export HOME=/dev/shm/home && mkdir -p $HOME"
+            },
+            "id": "User.sendInput.HOME0001",
+            "name": "export HOME /dev/shm"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "git add . && git commit -m 'update' && git push\n"
+            },
+            "id": "User.sendInput.6F1BD755",
+            "name": "git upload"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "git clone https://github.com/26hzhang/VSLNet.git\n"
+            },
+            "id": "User.sendInput.503D3E25",
+            "name": "git clone VSLNet"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "export RCLONE_CONFIG=/dev/shm/rclone.conf"
+            },
+            "id": "User.sendInput.RCLONE02",
+            "name": "export RCLONE_CONFIG /dev/shm"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "curl -fsSL https://claude.ai/install.sh | bash"
+            },
+            "id": "User.sendInput.CLAUDE001",
+            "name": "claude install"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "export RCLONE_CONFIG_PASS=''"
+            },
+            "id": "User.sendInput.RCLONE03",
+            "name": "export RCLONE_CONFIG_PASS empty"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "export RCLONE_CONFIG=/tmp/rclone.conf"
+            },
+            "id": "User.sendInput.RCLONE01",
+            "name": "export RCLONE_CONFIG /tmp"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs"
+            },
+            "id": "User.sendInput.NODE2201",
+            "name": "install nodejs 22"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "echo 'export PATH=\\\"$HOME/.local/bin:$PATH\\\"' >> ~/.bashrc && source ~/.bashrc"
+            },
+            "id": "User.sendInput.PATH0001",
+            "name": "add ~/.local/bin to PATH"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "$token = Get-Secret rclone-gdrive -AsPlainText"
+            },
+            "id": "User.sendInput.PS000001",
+            "name": "pwsh get rclone token"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "printf '%s\n' \"export PS1='\\[\\e[1;32m\\]\\u@\\h:\\[\\e[1;36m\\]\\w\\[\\e[0m\\]\\$ '\" >> ~/.bashrc\nsource ~/.bashrc\n"
+            },
+            "id": "User.sendInput.6A996637",
+            "name": "set PS1 (bash) + persist"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "vastai create instance <OFFER_ID> --image vastai/base-image:@vastai-automatic-tag --env '-p 1111:1111 -p 6006:6006 -p 8080:8080 -p 8384:8384 -p 72299:72299 -e OPEN_BUTTON_PORT=1111 -e OPEN_BUTTON_TOKEN=1 -e JUPYTER_DIR=/ -e DATA_DIRECTORY=/workspace/ -e PORTAL_CONFIG=\"localhost:1111:11111:/:Instance Portal|localhost:8080:18080:/:Jupyter|localhost:8080:8080:/terminals/1:Jupyter Terminal|localhost:8384:18384:/:Syncthing|localhost:6006:16006:/:Tensorboard\"' --onstart-cmd 'entrypoint.sh' --disk 32 --jupyter --ssh --direct"
+            },
+            "id": "User.sendInput.1CF0D5CE",
+            "name": "vastai template-command"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "curl -sL https://raw.githubusercontent.com/kidotch/dotfiles/main/bootstrap.sh | bash"
+            },
+            "id": "User.sendInput.DOTFILE01",
+            "name": "dotfiles bootstrap"
+        },
+        {
+            "command": 
+            {
+                "action": "sendInput",
+                "input": "(type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) && sudo mkdir -p -m 755 /etc/apt/keyrings && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && sudo mkdir -p -m 755 /etc/apt/sources.list.d && echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && sudo apt update && sudo apt install gh -y"
+            },
+            "id": "User.sendInput.9E5B525",
+            "name": "install gh"
+        }
+    ],
+    "alwaysShowTabs": false,
+    "copyFormatting": "none",
+    "copyOnSelect": false,
+    "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+    "disableAnimations": true,
+    "focusFollowMouse": true,
+    "keybindings": 
+    [
+        {
+            "id": "User.setLight",
+            "keys": "ctrl+shift+l"
+        },
+        {
+            "id": "Terminal.ScrollUpPage",
+            "keys": "pgup"
+        },
+        {
+            "id": "Terminal.ScrollDownPage",
+            "keys": "pgdn"
+        },
+        {
+            "id": "Terminal.ScrollUp",
+            "keys": "ctrl+up"
+        },
+        {
+            "id": "Terminal.ScrollToBottom",
+            "keys": "end"
+        },
+        {
+            "id": "Terminal.ScrollDown",
+            "keys": "ctrl+down"
+        },
+        {
+            "id": "Terminal.ScrollToTop",
+            "keys": "home"
+        },
+        {
+            "id": "Terminal.CopyToClipboard",
+            "keys": "ctrl+c"
+        },
+        {
+            "id": "User.setDark",
+            "keys": "ctrl+shift+d"
+        },
+        {
+            "id": "User.opacityDown",
+            "keys": "ctrl+shift+up"
+        },
+        {
+            "id": "User.opacityUp",
+            "keys": "ctrl+shift+down"
+        },
+        {
+            "id": "Terminal.DuplicatePaneAuto",
+            "keys": "alt+shift+d"
+        },
+        {
+            "id": "User.splitPane.A2B727CC",
+            "keys": "ctrl+s"
+        },
+        {
+            "id": "Terminal.PasteFromClipboard",
+            "keys": "ctrl+v"
+        },
+        {
+            "id": null,
+            "keys": "ctrl+shift+x"
+        },
+        {
+            "id": null,
+            "keys": "ctrl+shift+v"
+        },
+        {
+            "id": null,
+            "keys": "shift+insert"
+        }
+    ],
+    "launchMode": "focus",
+    "newTabMenu": 
+    [
+        {
+            "type": "remainingProfiles"
+        }
+    ],
+    "profiles": 
+    {
+        "defaults": 
+        {
+            "colorScheme": "Dimidium",
+            "cursorColor": "#16C60C",
+            "cursorShape": "filledBox",
+            "font": 
+            {
+                "face": "UDEV Gothic 35NF",
+                "size": 14
+            },
+            "historySize": 20000,
+            "opacity": 80,
+            "scrollbarState": "hidden",
+            "unfocusedAppearance": 
+            {
+                "opacity": 80
+            },
+            "useAcrylic": true
+        },
+        "list": 
+        [
+            {
+                "commandline": "%SystemRoot%\\System32\\cmd.exe",
+                "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+                "hidden": false,
+                "name": "\u30b3\u30de\u30f3\u30c9 \u30d7\u30ed\u30f3\u30d7\u30c8"
+            },
+            {
+                "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
+                "hidden": false,
+                "name": "Azure Cloud Shell",
+                "source": "Windows.Terminal.Azure"
+            },
+            {
+                "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+                "hidden": false,
+                "name": "PowerShell",
+                "source": "Windows.Terminal.PowershellCore"
+            },
+            {
+                "guid": "{e6501cf6-7ad0-565f-9028-c69a86abdf9d}",
+                "hidden": false,
+                "name": "Developer Command Prompt for VS 18",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{416f5e38-7ad3-54ee-ae3b-505eae196c8f}",
+                "hidden": false,
+                "name": "Developer PowerShell for VS 18",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{87045c18-f43c-5fb4-856b-6bff2cb413f2}",
+                "hidden": false,
+                "name": "Ubuntu-24.04",
+                "source": "Microsoft.WSL"
+            },
+            {
+                "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+                "hidden": false,
+                "name": "Windows PowerShell"
+            }
+        ]
+    },
+    "schemes": 
+    [
+        {
+            "background": "#5E103B",
+            "black": "#0C0C0C",
+            "blue": "#0037DA",
+            "brightBlack": "#767676",
+            "brightBlue": "#3B78FF",
+            "brightCyan": "#61D6D6",
+            "brightGreen": "#16C60C",
+            "brightPurple": "#B4009E",
+            "brightRed": "#E74856",
+            "brightWhite": "#F2F2F2",
+            "brightYellow": "#F9F1A5",
+            "cursorColor": "#FFFFFF",
+            "cyan": "#3A96DD",
+            "foreground": "#FFFFFF",
+            "green": "#13A10E",
+            "name": "Color Scheme 15",
+            "purple": "#881798",
+            "red": "#C50F1F",
+            "selectionBackground": "#FFFFFF",
+            "white": "#CCCCCC",
+            "yellow": "#C19C00"
+        },
+        {
+            "background": "#FAFAFA",
+            "black": "#282C34",
+            "blue": "#1565C0",
+            "brightBlack": "#5C6370",
+            "brightBlue": "#1E88E5",
+            "brightCyan": "#00ACC1",
+            "brightGreen": "#43A047",
+            "brightPurple": "#AB47BC",
+            "brightRed": "#E53935",
+            "brightWhite": "#FFFFFF",
+            "brightYellow": "#D4A017",
+            "cursorColor": "#16C60C",
+            "cyan": "#00838F",
+            "foreground": "#1E1E1E",
+            "green": "#2E7D32",
+            "name": "One Half Light (modified)",
+            "purple": "#8E24AA",
+            "red": "#D32F2F",
+            "selectionBackground": "#C0D0E8",
+            "white": "#FAFAFA",
+            "yellow": "#B8860B"
+        }
+    ],
+    "showTabsInTitlebar": true,
+    "showTerminalTitleInTitlebar": false,
+    "snapToGridOnResize": false,
+    "theme": "dark",
+    "themes": 
+    [
+        {
+            "name": "notitlebar",
+            "tabRow": 
+            {
+                "background": "#191919FF",
+                "unfocusedBackground": "#191919FF"
+            },
+            "window": 
+            {
+                "applicationTheme": "dark",
+                "experimental.rainbowFrame": false,
+                "frame": null,
+                "unfocusedFrame": null,
+                "useMica": false
+            }
+        }
+    ],
+    "useAcrylicInTabRow": true
+}
