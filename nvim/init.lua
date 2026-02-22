@@ -9,6 +9,7 @@ vim.opt.relativenumber = true
 
 vim.opt.termguicolors = true
 vim.opt.clipboard = "unnamedplus"
+vim.opt.whichwrap:append("<,>,[,],h,l")
 vim.opt.undofile = true
 vim.opt.undodir = vim.fn.stdpath("state") .. "/undo"
 vim.opt.undolevels = 10000

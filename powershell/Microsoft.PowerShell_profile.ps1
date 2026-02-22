@@ -105,7 +105,7 @@ function _Get-VaiSshInfo {
 function vai-ssh {
     param(
         [string]$InstanceId,
-        [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
+        [string]$KeyPath = "$env:USERPROFILE\.ssh\vai-key"
     )
 
     $InstanceId = _Select-VaiInstance $InstanceId
@@ -120,7 +120,7 @@ function vai-ssh {
 function vai-sync-rclone {
     param(
         [string]$InstanceId,
-        [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
+        [string]$KeyPath = "$env:USERPROFILE\.ssh\vai-key"
     )
 
     $InstanceId = _Select-VaiInstance $InstanceId
@@ -136,7 +136,7 @@ function vai-sync-rclone {
 function vai-config {
     param(
         [string]$InstanceId,
-        [string]$KeyPath  = "$env:USERPROFILE\.ssh\vastai_key",
+        [string]$KeyPath  = "$env:USERPROFILE\.ssh\vai-key",
         [string]$OutPath  = "$env:USERPROFILE\.ssh\config.vast",
         [string]$HostPrefix = "vast"
     )
@@ -180,7 +180,7 @@ function vai-scp {
         [Parameter(Mandatory=$true, Position=0, ValueFromRemainingArguments=$true)]
         [string[]]$Paths,
         [string]$InstanceId,
-        [string]$KeyPath = "$env:USERPROFILE\.ssh\vastai_key"
+        [string]$KeyPath = "$env:USERPROFILE\.ssh\vai-key"
     )
 
     if (-not $Paths -or $Paths.Count -lt 2) {
@@ -297,4 +297,6 @@ function Toggle-Acrylic {
     Write-Host "useAcrylic: $state"
 }
 
-
+function gcp {
+    git add . && git commit -m (Get-Date -Format 'MM-dd HH:mm') && git push
+}
